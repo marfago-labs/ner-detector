@@ -1,0 +1,125 @@
+# Run gold benchmark and publish report.html to GitHub Pages.
+# Configure via Settings → Secrets and variables → Actions (see docs/ci.md).
+name: Benchmark report (Pages)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# Node 20 on Actions runners is deprecated; opt into Node 24 for JS actions (checkout, cache, etc.).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark-pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    outputs:
+      output_dir: ${{ steps.paths.outputs.output_dir }}
+    env:
+      TRANSFORMERS_VERBOSITY: ${{ vars.TRANSFORMERS_VERBOSITY || 'error' }}
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/huggingface
+          key: hf-${{ runner.os }}-${{ hashFiles('uv.lock', 'benchmark/config/compare_backends.yaml') }}
+          restore-keys: |
+            hf-${{ runner.os }}-
+
+      - name: Install dependencies (ML backends)
+        run: uv sync --extra dev --extra ml --extra gliner
+
+      - id: paths
+        shell: bash
+        run: |
+          out="${{ vars.BENCHMARK_OUTPUT_DIR }}"
+          if [ -z "$out" ]; then
+            out="benchmark/results/latest"
+          fi
+          echo "output_dir=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Run benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="${{ steps.paths.outputs.output_dir }}"
+          mkdir -p "$(dirname "$out")"
+
+          repeats="${{ vars.BENCHMARK_REPEATS }}"
+          if [ -z "$repeats" ]; then repeats="1"; fi
+
+          args=(--repeats "$repeats" --output "$out")
+
+          max_ex="${{ vars.BENCHMARK_MAX_EXAMPLES }}"
+          if [ -n "$max_ex" ]; then
+            args+=(--max-examples "$max_ex")
+          fi
+
+          pattern_only="${{ vars.BENCHMARK_PATTERN_ONLY }}"
+          if [ "$pattern_only" = "true" ] || [ "$pattern_only" = "1" ]; then
+            args+=(--pattern-only)
+          fi
+
+          datasets="${{ vars.BENCHMARK_DATASETS }}"
+          if [ -n "$datasets" ]; then
+            args+=(--datasets "$datasets")
+          fi
+
+          runs="${{ vars.BENCHMARK_RUNS }}"
+          if [ -n "$runs" ]; then
+            args+=(--runs "$runs")
+          fi
+
+          echo "Running: uv run python benchmark/run_benchmark.py ${args[*]}"
+          uv run python benchmark/run_benchmark.py "${args[@]}"
+
+      - name: Prepare Pages site (index.html)
+        shell: bash
+        run: |
+          out="${{ steps.paths.outputs.output_dir }}"
+          test -f "$out/report.html"
+          cp "$out/report.html" "$out/index.html"
+
+      - name: Upload report (workflow artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ner-benchmark-report
+          path: ${{ steps.paths.outputs.output_dir }}
+          retention-days: 90
+
+      - name: Upload Pages artifact
+        if: vars.BENCHMARK_DEPLOY_PAGES != 'false'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.paths.outputs.output_dir }}
+
+  deploy:
+    needs: benchmark
+    if: vars.BENCHMARK_DEPLOY_PAGES != 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

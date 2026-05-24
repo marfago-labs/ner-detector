@@ -1,0 +1,8 @@
+# Active NER profile. Override path with --config or NER_CONFIG_PATH.
+# CLI flags take precedence over this file.
+
+backend: pattern
+# model_id: dslim/bert-base-NER   # unset = backend default from default_models.yaml
+threshold: 0.5
+# labels: [person, organization, location]
+label_preset: general_en

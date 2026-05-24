@@ -1,0 +1,23 @@
+# Default model IDs per backend. Override with --model or NER_MODEL_ID.
+
+transformers:
+  # CoNLL-03 English PER/ORG/LOC/MISC — 90M+ downloads, fast baseline
+  default: dslim/bert-base-NER
+  alternatives:
+    - Jean-Baptiste/roberta-large-ner-english
+    - dbmdz/bert-large-cased-finetuned-conll03-english
+
+gliner:
+  # Zero-shot: pass custom labels at runtime
+  default: urchade/gliner_medium-v2.1
+  alternatives:
+    - knowledgator/gliner-bi-base-v2.0
+    - knowledgator/gliner-x-large
+    - urchade/gliner_multi-v2.1
+    - fastino/gliner2-base-v1
+
+# Suggested label sets (GLiNER / zero-shot only)
+label_presets:
+  general_en: [person, organization, location, date, product]
+  scientific: [person, organization, method, dataset, metric, date]
+  pii: [person, email, phone number, address, date]

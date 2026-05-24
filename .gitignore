@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments / uv
+.venv/
+venv/
+env/
+
+# Packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Tests & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type checkers / linters (if added later)
+.mypy_cache/
+.ruff_cache/
+
+# Secrets & local env
+.env
+.env.local
+
+# Benchmark outputs (generated reports and metrics)
+benchmark/results/
+
+# Hugging Face / model caches (local downloads)
+.cache/
+hf_cache/
+
+# OS & editors
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

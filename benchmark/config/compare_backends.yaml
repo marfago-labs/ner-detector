@@ -1,0 +1,23 @@
+# Backend runs to compare. Each entry is evaluated on every dataset listed below.
+repeats: 5  # trials per backend×dataset (CLI --repeats overrides)
+
+runs:
+  - name: pattern
+    backend: pattern
+
+  - name: bert-conll
+    backend: transformers
+    model_id: dslim/bert-base-NER
+    threshold: 0.5
+
+  - name: gliner-medium
+    backend: gliner
+    model_id: urchade/gliner_medium-v2.1
+    labels: [person, organization, location, date, product]
+    threshold: 0.5
+
+datasets:
+  - marfago_gold
+  - conll_dev_sample
+
+label_map: unified

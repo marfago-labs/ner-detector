@@ -1,0 +1,126 @@
+# Continuous integration and benchmark reports
+
+## Overview
+
+Workflows set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so JavaScript actions (checkout, cache, upload-artifact, setup-uv) run on Node 24 ahead of the Node 20 runner deprecation.
+
+| Workflow | File | When it runs | Purpose |
+|----------|------|----------------|---------|
+| **CI** | `.github/workflows/ci.yml` | Every push/PR to `master`/`main` | `pytest` with ≥95% coverage (no ML download) |
+| **Benchmark → Pages** | `.github/workflows/benchmark-pages.yml` | Push to `master`, manual | Full benchmark + publish `report.html` |
+
+---
+
+## Step 1 — Enable GitHub Pages (required for deploy; optional if you use artifacts only)
+
+The **benchmark** job always succeeds independently. The **deploy** job needs Pages turned on in the repo.
+
+1. Open [marfago-labs/ner-detector](https://github.com/marfago-labs/ner-detector) → **Settings** → **Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from branch”).
+3. Save, then re-run **Benchmark report (Pages)**.
+
+After a successful deploy, the URL appears under **Settings → Pages** and in the **github-pages** environment summary.
+
+### Private repository
+
+| Situation | What to do |
+|-----------|------------|
+| Deploy fails with **404** / *Ensure GitHub Pages has been enabled* | Pages is not enabled yet — complete steps 1–3 above. |
+| Pages enabled but still 404 | Your org/account may need **GitHub Team**, **Enterprise**, or **Pro** for Pages on **private** repos. Check org billing/features. |
+| No Pages on your plan | Set variable `BENCHMARK_DEPLOY_PAGES` = `false` (see below). Download **`ner-benchmark-report`** from the workflow run **Artifacts** (repo members only). |
+| Public report for everyone | Make the repo **public**, enable Pages, or publish the artifact elsewhere. |
+
+**Who can view a private Pages site:** usually org members / collaborators with repo access, not the whole internet (unless you set Pages visibility to public where your plan allows it).
+
+---
+
+## Step 2 — Benchmark workflow (already in repo)
+
+See `.github/workflows/benchmark-pages.yml`. Configure it via **repository variables** and **secrets** below (Settings → Secrets and variables → Actions).
+
+---
+
+## Repository variables (`vars`)
+
+Set under **Settings → Secrets and variables → Actions → Variables** (repository scope).
+
+| Variable | Default if unset | Description |
+|----------|------------------|-------------|
+| `BENCHMARK_REPEATS` | `1` | Trials per backend×dataset (`--repeats`) |
+| `BENCHMARK_MAX_EXAMPLES` | *(empty)* | Cap examples per dataset (`--max-examples`) |
+| `BENCHMARK_PATTERN_ONLY` | `false` | `true` → only run `pattern` backend |
+| `BENCHMARK_DATASETS` | *(empty)* | Comma-separated dataset names (`--datasets`) |
+| `BENCHMARK_RUNS` | *(empty)* | Comma-separated run names (`--runs`) |
+| `TRANSFORMERS_VERBOSITY` | `error` | Passed to the benchmark job environment |
+| `BENCHMARK_OUTPUT_DIR` | `benchmark/results/latest` | Fixed output directory for the published report |
+| `BENCHMARK_DEPLOY_PAGES` | `true` | Set to `false` to skip GitHub Pages deploy (artifact upload still runs) |
+
+**CI tip:** use `BENCHMARK_REPEATS=1` (or `2`) on GitHub-hosted runners. Local `compare_backends.yaml` still defaults to `5` repeats.
+
+### Download report without Pages
+
+**Actions** → latest **Benchmark report (Pages)** run → **Artifacts** → `ner-benchmark-report` → open `report.html` locally.
+
+---
+
+## Repository secrets
+
+| Secret | Required | Description |
+|--------|----------|-------------|
+| `HF_TOKEN` | No | Hugging Face token for higher rate limits when downloading models |
+
+---
+
+## Step 3 — Workflow permissions
+
+The benchmark deploy job requests:
+
+- `pages: write`
+- `id-token: write`
+
+If deploy fails with permissions errors: **Settings → Actions → General → Workflow permissions** → allow read/write for workflows (or use the default GITHUB_TOKEN scope your org allows).
+
+---
+
+## Step 4 — Push and verify
+
+1. Push to `master` (CI runs automatically).
+2. **Actions** → confirm **CI** is green.
+3. Enable Pages (step 1), then trigger **Benchmark report (Pages)** (push to `master` or **Run workflow**).
+4. Open the Pages URL from the deployment summary.
+
+---
+
+## Step 5 — Who can see the report
+
+| Repo visibility | Typical audience |
+|-----------------|------------------|
+| Private | Org members / collaborators with repo access |
+| Public | Anyone with the Pages URL |
+
+---
+
+## Step 6 — Optional README link
+
+After Pages works, add to `README.md`:
+
+```markdown
+**[Latest benchmark report](https://marfago-labs.github.io/ner-detector/)** *(update URL from Settings → Pages)*
+```
+
+---
+
+## Manual re-run
+
+**Actions** → **Benchmark report (Pages)** → **Run workflow** (uses current variables/secrets).
+
+---
+
+## Local parity
+
+```bash
+uv sync --extra dev --extra ml --extra gliner
+uv run python benchmark/run_benchmark.py --repeats 1 --output benchmark/results/latest
+```
+
+See [benchmarks.md](benchmarks.md) for metrics and interpretation.

@@ -1,0 +1,31 @@
+# Map backend/gold labels to unified scoring labels.
+
+unified:
+  PER: person
+  B-PER: person
+  I-PER: person
+  person: person
+  ORG: organization
+  B-ORG: organization
+  I-ORG: organization
+  organization: organization
+  LOC: location
+  B-LOC: location
+  I-LOC: location
+  location: location
+  MISC: miscellaneous
+  B-MISC: miscellaneous
+  I-MISC: miscellaneous
+  miscellaneous: miscellaneous
+  date: date
+  product: product
+  arxiv_id: arxiv_id
+  year: year
+  number: number
+  acronym: acronym
+
+conll_to_unified:
+  PER: person
+  ORG: organization
+  LOC: location
+  MISC: miscellaneous
