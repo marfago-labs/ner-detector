@@ -85,12 +85,20 @@ class TransformersBackend:
                 if score < threshold:
                     continue
                 word = str(span.get("word", "")).strip()
-                if not word:
-                    continue
                 start = span.get("start")
                 end = span.get("end")
                 abs_start = chunk_offset + int(start) if start is not None else None
                 abs_end = chunk_offset + int(end) if end is not None else None
+                if (
+                    abs_start is not None
+                    and abs_end is not None
+                    and 0 <= abs_start < abs_end <= len(text)
+                ):
+                    surface = text[abs_start:abs_end].strip()
+                else:
+                    surface = word.replace("##", "").strip()
+                if not surface:
+                    continue
                 dedupe_key = (abs_start or 0, abs_end or 0)
                 if dedupe_key in seen and abs_start is not None:
                     continue
@@ -99,7 +107,7 @@ class TransformersBackend:
                 entity_group = str(span.get("entity_group", span.get("entity", "MISC")))
                 found.append(
                     DetectedEntity(
-                        text=word,
+                        text=surface,
                         label=entity_group,
                         score=round(score, 4),
                         start=abs_start,

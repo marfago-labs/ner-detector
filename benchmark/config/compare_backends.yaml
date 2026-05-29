@@ -19,5 +19,6 @@ runs:
 datasets:
   - marfago_gold
   - conll_dev_sample
+  - arxiv_gold
 
 label_map: unified

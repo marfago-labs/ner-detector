@@ -123,3 +123,22 @@ def test_transformers_span_without_start_still_emits() -> None:
         entities = TransformersBackend("m").detect("Org")
     assert len(entities) == 1
     assert entities[0].start is None
+
+
+def test_transformers_prefers_source_slice_over_wordpiece() -> None:
+    text = "Experiments on CIFAR-10 show gains."
+    start = text.index("CIFAR-10")
+    end = start + len("CIFAR-10")
+    spans = [
+        {
+            "word": "##IFAR - 10",
+            "score": 0.95,
+            "start": start,
+            "end": end,
+            "entity_group": "MISC",
+        }
+    ]
+    with _mock_transformers(spans):
+        entities = TransformersBackend("m").detect(text)
+    assert len(entities) == 1
+    assert entities[0].text == "CIFAR-10"

@@ -18,11 +18,18 @@ unified:
   I-MISC: miscellaneous
   miscellaneous: miscellaneous
   date: date
+  currency: currency
+  percentage: percentage
   product: product
   arxiv_id: arxiv_id
   year: year
   number: number
   acronym: acronym
+  model: model
+  dataset: dataset
+  benchmark: benchmark
+  metric: metric
+  method: method
 
 conll_to_unified:
   PER: person

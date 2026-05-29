@@ -86,3 +86,48 @@ def test_ner_runtime_config_labels_from_string() -> None:
         {"labels": "person, company , city"}
     )
     assert cfg.labels == ["person", "company", "city"]
+
+
+def test_ner_runtime_config_empty_model_id_becomes_none() -> None:
+    cfg = NerRuntimeConfig.model_validate({"backend": "pattern", "model_id": "  "})
+    assert cfg.model_id is None
+
+
+def test_ner_runtime_config_labels_empty_string_none() -> None:
+    cfg = NerRuntimeConfig.model_validate({"labels": "  ,  "})
+    assert cfg.labels is None
+
+
+def test_ner_runtime_config_labels_list_strips() -> None:
+    cfg = NerRuntimeConfig.model_validate({"labels": [" a ", ""]})
+    assert cfg.labels == ["a"]
+
+
+def test_default_ner_config_path_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NER_CONFIG_PATH", "/tmp/custom/ner.yaml")
+    assert config_module.default_ner_config_path() == Path("/tmp/custom/ner.yaml")
+
+
+def test_load_ner_config_missing_file_returns_defaults(tmp_path: Path) -> None:
+    config_module.clear_config_caches()
+    cfg = load_ner_config(str(tmp_path / "missing.yaml"))
+    assert cfg.backend == "pattern"
+    config_module.clear_config_caches()
+
+
+def test_resolve_label_preset_non_dict_presets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        config_module,
+        "load_model_config",
+        lambda: {"label_presets": "not-a-dict"},
+    )
+    assert resolve_label_preset("scientific") is None
+
+
+def test_resolve_ner_settings_without_config_file(tmp_path: Path) -> None:
+    config_module.clear_config_caches()
+    path = tmp_path / "nope.yaml"
+    resolved = resolve_ner_settings(config_path=str(path))
+    assert resolved.backend == "pattern"
+    assert resolved.config_path is None
+    config_module.clear_config_caches()

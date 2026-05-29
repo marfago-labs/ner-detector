@@ -31,7 +31,8 @@ uv run python benchmark/run_benchmark.py
 |------|------|
 | `benchmark/config/compare_backends.yaml` | Which backends and datasets to run |
 | `benchmark/config/label_maps.yaml` | Label normalization for scoring |
-| `benchmark/datasets/*.jsonl` | Gold annotations |
+| `benchmark/datasets/*.jsonl` | Shipped gold annotations (CI / offline) |
+| `../ner-dataset/datasets/*.jsonl` | Canonical gold from [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) (preferred when present) |
 
 ### Gold JSONL format
 
@@ -51,8 +52,21 @@ uv run python benchmark/run_benchmark.py
 |------|-------------|
 | `marfago_gold` | Domain snippets (person, org, location, arxiv_id, year, …) |
 | `conll_dev_sample` | Short CoNLL-style English news sentences |
+| `arxiv_gold` | 10 ML paper abstracts (models, datasets, benchmarks, metrics, methods) |
 
-Add more gold files under `benchmark/datasets/` (JSONL). For CoNLL-2003 exports, use Hugging Face [`eriktks/conll2003`](https://huggingface.co/datasets/eriktks/conll2003) and convert to the JSONL schema above.
+`arxiv_gold` is built by the sibling repo **[ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator)** into **[ner-dataset](https://github.com/marfago-labs/ner-dataset)** by default:
+
+```bash
+cd ../ner-gold-generator
+uv sync --extra dev
+uv run build-arxiv-gold   # → ../ner-dataset/datasets/arxiv_gold.jsonl
+```
+
+`load_dataset("arxiv_gold")` checks `NER_DATASET_DIR`, then `../ner-dataset/datasets/`, then `benchmark/datasets/` (shipped copy).
+
+The same tool can build gold from **YouTube** transcripts, a **folder** of `.txt`/`.md`/`.json` (blogs, docs), or a **JSONL** corpus (`uv run build-gold --source …`). See [ner-gold-generator docs](https://github.com/marfago-labs/ner-gold-generator/blob/main/docs/README.md).
+
+Add more gold files under `ner-dataset/datasets/` (or `benchmark/datasets/` for small bundled sets). For CoNLL-2003 exports, use Hugging Face [`eriktks/conll2003`](https://huggingface.co/datasets/eriktks/conll2003) and convert to the JSONL schema above.
 
 ## CLI
 

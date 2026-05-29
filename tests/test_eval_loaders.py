@@ -79,3 +79,57 @@ def test_load_dataset_max_examples() -> None:
 def test_dataset_path() -> None:
     p = dataset_path("marfago_gold", root=benchmark_root())
     assert p.name == "marfago_gold.jsonl"
+
+
+def test_dataset_path_prefers_sibling_ner_dataset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    labs = tmp_path / "labs"
+    detector = labs / "ner-detector"
+    dataset_repo = labs / "ner-dataset" / "datasets"
+    dataset_repo.mkdir(parents=True)
+    bundled = detector / "benchmark" / "datasets"
+    bundled.mkdir(parents=True)
+    custom = dataset_repo / "custom.jsonl"
+    custom.write_text(
+        json.dumps(
+            {
+                "id": "1",
+                "text": "x",
+                "entities": [],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (bundled / "custom.jsonl").write_text('{"id": "old"}\n', encoding="utf-8")
+    monkeypatch.setattr(
+        "ner_detector.eval.loaders._PACKAGE_ROOT",
+        detector,
+    )
+    monkeypatch.setattr(
+        "ner_detector.eval.loaders._DEFAULT_BENCHMARK_ROOT",
+        detector / "benchmark",
+    )
+    resolved = dataset_path("custom")
+    assert resolved == custom
+    examples = load_dataset("custom")
+    assert examples[0].id == "1"
+
+
+def test_load_arxiv_gold() -> None:
+    examples = load_dataset("arxiv_gold")
+    assert len(examples) == 10
+    labels = {e.label for ex in examples for e in ex.entities}
+    assert labels <= {
+        "model",
+        "dataset",
+        "benchmark",
+        "metric",
+        "method",
+        "number",
+        "organization",
+    }
+    for ex in examples:
+        for ent in ex.entities:
+            assert ex.text[ent.start : ent.end] == ent.text
