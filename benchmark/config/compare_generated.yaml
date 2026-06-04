@@ -35,6 +35,25 @@ runs:
       - method
     threshold: 0.5
 
+  - name: gliner-bi-large
+    backend: gliner
+    model_id: knowledgator/gliner-bi-large-v2.0
+    # Must cover both synthetic gold (person/org/loc/date/number) and arxiv_gold
+    # (model/dataset/benchmark/metric/method). general_en labels yield ~0 on arxiv.
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    threshold: 0.5
+
 datasets:
   - arxiv_gold
   - synthetic_news_100

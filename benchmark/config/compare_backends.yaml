@@ -30,6 +30,23 @@ runs:
       - method
     threshold: 0.5
 
+  - name: gliner-bi-large
+    backend: gliner
+    model_id: knowledgator/gliner-bi-large-v2.0
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    threshold: 0.5
+
 datasets:
   - arxiv_gold
   - synthetic_news_100
