@@ -67,7 +67,9 @@ def test_render_radar_with_errors_block() -> None:
     assert "run failed" in html_out
 
 
-def test_radar_axis_extract_none() -> None:
+def test_ner_radar_axes_include_speed() -> None:
+    keys = [axis.key for axis in NER_RADAR_AXES]
+    assert keys == ["document_f1", "strict_f1", "speed"]
     row = {"strict_f1": None}
     for axis in NER_RADAR_AXES:
         assert axis.extract(row) is None or isinstance(axis.extract(row), float)

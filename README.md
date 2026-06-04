@@ -126,6 +126,8 @@ After Pages is enabled, the live report URL is shown under **Settings → Pages*
 
 ## Benchmark
 
+Gold datasets live in the sibling **[ner-dataset](https://github.com/marfago-labs/ner-dataset)** repo (`../ner-dataset/datasets/`). See [docs/benchmarks.md](docs/benchmarks.md).
+
 ```bash
 uv run python benchmark/run_benchmark.py --pattern-only
 # → benchmark/results/run-*/report.html (radar charts) + report.md

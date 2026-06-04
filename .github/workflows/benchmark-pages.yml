@@ -27,8 +27,14 @@ jobs:
       TRANSFORMERS_VERBOSITY: ${{ vars.TRANSFORMERS_VERBOSITY || 'error' }}
       HF_HOME: ${{ github.workspace }}/.cache/huggingface
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      NER_DATASET_DIR: ${{ github.workspace }}/ner-dataset/datasets
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: marfago-labs/ner-dataset
+          path: ner-dataset
 
       - uses: astral-sh/setup-uv@v5
         with:

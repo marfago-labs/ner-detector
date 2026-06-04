@@ -64,4 +64,6 @@ def test_render_ner_methodology_includes_config(tmp_path: Path) -> None:
     html = render_ner_methodology_content(br)
     assert "Benchmark process" in html
     assert "marfago_gold" in html
+    assert "Document-level string overlap F1" in html
     assert "Strict span F1" in html
+    assert "sorted by Doc F1" in html

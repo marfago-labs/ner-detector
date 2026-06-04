@@ -49,11 +49,38 @@ def render_markdown_report(benchmark: BenchmarkResult) -> str:
         f"Config: `{benchmark.config_path}`",
         f"Output: `{benchmark.output_dir}`",
         repeats_note,
-        "## Summary (strict span F1)",
+        "## Summary (document-level string overlap F1)",
         "",
-        f"| Run | Dataset | Backend | Model | F1 | P | R | {lat_header} |",
-        "|-----|---------|---------|-------|-----|---|---|-----------------|",
+        f"| Run | Dataset | Backend | Model | Doc F1 | P | R | {lat_header} |",
+        "|-----|---------|---------|-------|--------|---|---|-----------------|",
     ]
+
+    for r in sorted(benchmark.results, key=lambda x: (-x.summary.document_prf()[2], x.run_name)):
+        if r.error:
+            lines.append(
+                f"| {r.run_name} | {r.dataset} | {r.backend} | {r.model_id or '—'} | "
+                f"ERROR | — | — | — |"
+            )
+            continue
+        p, rec, f1 = r.summary.document_prf()
+        stable = ""
+        if benchmark.repeats > 1 and not r.error:
+            stable = " ✓" if r.scores_reproducible else " ⚠"
+        lines.append(
+            f"| {r.run_name} | {r.dataset} | {r.backend} | {r.model_id or '—'} | "
+            f"{_fmt_pct(f1)}{stable} | {_fmt_pct(p)} | {_fmt_pct(rec)} | "
+            f"{_latency_cell(r)} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Summary (strict span F1)",
+            "",
+            f"| Run | Dataset | Backend | Model | F1 | P | R | {lat_header} |",
+            "|-----|---------|---------|-------|-----|---|---|-----------------|",
+        ]
+    )
 
     for r in sorted(benchmark.results, key=lambda x: (-x.summary.strict_prf()[2], x.run_name)):
         if r.error:
@@ -131,10 +158,14 @@ def render_markdown_report(benchmark: BenchmarkResult) -> str:
             "",
             "## Notes",
             "",
-            "- **Strict**: exact `(start, end, label)` after label normalization.",
+            "- **Document (Doc F1)**: per example, build sets of `(label, lowercased text)` for gold and predictions; "
+            "TP = intersection, FP = predictions not in gold, FN = gold not in predictions; micro-averaged P/R/F1. "
+            "Duplicate spans with the same label and string count once. Primary leaderboard metric — suited to salient "
+            "gold and concept-style extraction (e.g. recommendation tags).",
+            "- **Strict**: exact `(start, end, label)` after label normalization; one span per match.",
             "- **Relaxed**: same label and span overlap ratio ≥ 0.5.",
             "- Compare backends only on datasets whose gold labels match the run (see `benchmark/config/label_maps.yaml`).",
-            "- `pattern` is intended for domain gold (e.g. `marfago_gold`), not CoNLL entity types.",
+            "- `pattern` is intended for domain gold with arxiv IDs and years (e.g. synthetic corpora), not CoNLL entity types.",
         ]
     )
     if benchmark.repeats > 1:
@@ -158,7 +189,7 @@ def write_report(benchmark: BenchmarkResult) -> tuple[Path, Path, Path]:
         encoding="utf-8",
     )
     report_path.write_text(render_markdown_report(benchmark), encoding="utf-8")
-    from ner_detector.eval.html_report import render_html_report
+    from ner_detector.eval.html_report import write_html_report
 
-    html_path.write_text(render_html_report(benchmark), encoding="utf-8")
+    write_html_report(benchmark, html_path)
     return metrics_path, report_path, html_path

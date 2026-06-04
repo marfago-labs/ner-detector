@@ -11,7 +11,7 @@ from typing import Any
 import yaml
 
 from ner_detector.detect import detect_entities
-from ner_detector.eval.loaders import benchmark_root, load_dataset
+from ner_detector.eval.loaders import benchmark_root, load_dataset, resolve_benchmark_root
 from ner_detector.eval.metrics import ScoreSummary, score_example
 from ner_detector.eval.repeat_stats import LatencyStats, compute_latency_stats, format_latency_mean_std
 from ner_detector.eval.types import BackendRunSpec, BenchmarkConfig, GoldExample
@@ -28,6 +28,7 @@ class RunResult:
     summary: ScoreSummary = field(default_factory=ScoreSummary)
     latency_ms_total: float = 0.0
     latency_ms_per_example: float = 0.0
+    latency_load_ms: float = 0.0
     error: str | None = None
     n_repeats: int = 1
     latency_stats: LatencyStats | None = None
@@ -54,6 +55,9 @@ class RunResult:
             "relaxed": {"precision": rp, "recall": rr, "f1": rf1, **self._counts("relaxed")},
             "latency_ms_total": round(self.latency_ms_total, 2),
             "latency_ms_per_example": round(self.latency_ms_per_example, 2),
+            "latency_load_ms": round(self.latency_load_ms, 2),
+            "confusion_strict": self.summary.confusion_strict.to_dict(),
+            "confusion_relaxed": self.summary.confusion_relaxed.to_dict(),
         }
         if self.latency_stats is not None:
             out["latency"] = self.latency_stats.to_dict()
@@ -72,7 +76,7 @@ class BenchmarkResult:
     config_path: Path
     output_dir: Path
     results: list[RunResult] = field(default_factory=list)
-    repeats: int = 5
+    repeats: int = 1
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -102,6 +106,10 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
     for item in runs_raw:
         if not isinstance(item, dict):
             continue
+        ds_raw = item.get("datasets")
+        run_datasets: list[str] | None = None
+        if isinstance(ds_raw, list) and ds_raw:
+            run_datasets = [str(d) for d in ds_raw]
         runs.append(
             BackendRunSpec(
                 name=str(item.get("name", item.get("backend", "run"))),
@@ -109,10 +117,11 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
                 model_id=item.get("model_id"),
                 labels=item.get("labels"),
                 threshold=float(item.get("threshold", 0.5)),
+                datasets=run_datasets,
             )
         )
 
-    repeats_raw = raw.get("repeats", 5)
+    repeats_raw = raw.get("repeats", 1)
     try:
         repeats = max(1, int(repeats_raw))
     except (TypeError, ValueError) as exc:
@@ -185,6 +194,7 @@ def _aggregate_trials(
     latencies = [t.latency_ms_per_example for t in trials]
     stats = compute_latency_stats(latencies)
     base = trials[-1]
+    load_ms = statistics.mean([t.latency_load_ms for t in trials])
     return RunResult(
         run_name=run_name,
         backend=backend,
@@ -193,6 +203,7 @@ def _aggregate_trials(
         summary=base.summary,
         latency_ms_total=statistics.mean([t.latency_ms_total for t in trials]),
         latency_ms_per_example=stats.mean,
+        latency_load_ms=load_ms,
         error=None,
         n_repeats=len(trials),
         latency_stats=stats,
@@ -203,12 +214,22 @@ def _aggregate_trials(
 
 
 def _merge_summary(target: ScoreSummary, added: ScoreSummary) -> None:
-    target.strict.add(added.strict)
-    target.relaxed.add(added.relaxed)
-    target.n_examples += added.n_examples
-    target.n_gold_spans += added.n_gold_spans
-    target.n_pred_spans += added.n_pred_spans
-    target.skipped_predictions += added.skipped_predictions
+    target.merge(added)
+
+
+def _warmup_backend(spec: BackendRunSpec, examples: list[GoldExample]) -> float:
+    """Load ML weights before timed inference. Returns wall ms for the warmup pass."""
+    if spec.backend == "pattern" or not examples:
+        return 0.0
+    t0 = time.perf_counter()
+    detect_entities(
+        examples[0].text,
+        backend=spec.backend,  # type: ignore[arg-type]
+        model_id=spec.model_id,
+        labels=spec.labels,
+        threshold=spec.threshold,
+    )
+    return (time.perf_counter() - t0) * 1000
 
 
 def _run_backend_on_dataset(
@@ -218,6 +239,16 @@ def _run_backend_on_dataset(
     label_map: str,
 ) -> RunResult:
     summary = ScoreSummary()
+    try:
+        load_ms = _warmup_backend(spec, examples)
+    except Exception as exc:  # noqa: BLE001 — surface backend failures in report
+        return RunResult(
+            run_name=spec.name,
+            backend=spec.backend,
+            model_id=spec.model_id,
+            dataset="",
+            error=str(exc),
+        )
     t0 = time.perf_counter()
     backend: NerBackend = spec.backend  # type: ignore[assignment]
     try:
@@ -241,6 +272,7 @@ def _run_backend_on_dataset(
             summary=summary,
             latency_ms_total=elapsed,
             latency_ms_per_example=elapsed / max(summary.n_examples, 1),
+            latency_load_ms=load_ms,
             error=str(exc),
         )
 
@@ -254,6 +286,7 @@ def _run_backend_on_dataset(
         summary=summary,
         latency_ms_total=elapsed,
         latency_ms_per_example=elapsed / n,
+        latency_load_ms=load_ms,
         error=None,
     )
 
@@ -270,7 +303,7 @@ def run_benchmark(
     """Execute all configured backend × dataset combinations."""
     cfg = load_benchmark_config(config_path)
     n_repeats = max(1, repeats if repeats is not None else cfg.repeats)
-    root = benchmark_root(cfg.benchmark_root)
+    root = resolve_benchmark_root(cfg.benchmark_root, config_path=config_path)
     selected_datasets = datasets if datasets else cfg.datasets
     selected_runs = (
         [r for r in cfg.runs if r.name in run_names]
@@ -284,15 +317,30 @@ def run_benchmark(
         repeats=n_repeats,
     )
 
-    for dataset_name in selected_datasets:
-        examples = load_dataset(dataset_name, root=root, max_examples=max_examples)
-        for spec in selected_runs:
-            trials: list[RunResult] = []
-            for _ in range(n_repeats):
+    # Keyed by (run_name, dataset) — trials collected across repeat rounds.
+    trial_buckets: dict[tuple[str, str], list[RunResult]] = {}
+
+    def _datasets_for_run(spec: BackendRunSpec) -> list[str]:
+        return spec.datasets if spec.datasets is not None else selected_datasets
+
+    for spec in selected_runs:
+        run_datasets = _datasets_for_run(spec)
+        for repeat_idx in range(n_repeats):
+            if repeat_idx > 0:
                 clear_backend_cache()
-                trial = _run_backend_on_dataset(spec, examples, label_map=cfg.label_map)
+            for dataset_name in run_datasets:
+                examples = load_dataset(
+                    dataset_name, root=root, max_examples=max_examples
+                )
+                trial = _run_backend_on_dataset(
+                    spec, examples, label_map=cfg.label_map
+                )
                 trial.dataset = dataset_name
-                trials.append(trial)
+                trial_buckets.setdefault((spec.name, dataset_name), []).append(trial)
+
+    for spec in selected_runs:
+        for dataset_name in _datasets_for_run(spec):
+            trials = trial_buckets[(spec.name, dataset_name)]
             result = _aggregate_trials(
                 trials,
                 run_name=spec.name,

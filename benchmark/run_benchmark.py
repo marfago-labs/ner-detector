@@ -61,8 +61,8 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Run each backend×dataset N times (default: config repeats or 5). "
-        "Clears model cache between repeats; reports mean±std latency and score stability.",
+        help="Run each backend×dataset N times (default: config repeats or 1). "
+        "Clears model cache between repeat rounds; reports mean±std latency and score stability.",
     )
     return parser
 

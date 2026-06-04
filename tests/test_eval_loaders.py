@@ -12,12 +12,16 @@ from ner_detector.eval.loaders import (
     dataset_path,
     load_dataset,
     load_gold_jsonl,
+    resolve_benchmark_root,
 )
 
 
 def test_benchmark_root_default() -> None:
     root = benchmark_root()
-    assert (root / "datasets").is_dir()
+    assert root.name == "ner-dataset"
+    sibling_datasets = root / "datasets"
+    if sibling_datasets.is_dir():
+        assert (sibling_datasets / "arxiv_gold.jsonl").is_file()
 
 
 def test_load_gold_jsonl(tmp_path: Path) -> None:
@@ -72,12 +76,16 @@ def test_load_dataset_missing(tmp_path: Path) -> None:
 
 
 def test_load_dataset_max_examples() -> None:
-    examples = load_dataset("marfago_gold", max_examples=2)
+    from tests.conftest import FIXTURE_BENCHMARK_ROOT
+
+    examples = load_dataset("marfago_gold", root=FIXTURE_BENCHMARK_ROOT, max_examples=2)
     assert len(examples) == 2
 
 
 def test_dataset_path() -> None:
-    p = dataset_path("marfago_gold", root=benchmark_root())
+    from tests.conftest import FIXTURE_BENCHMARK_ROOT
+
+    p = dataset_path("marfago_gold", root=FIXTURE_BENCHMARK_ROOT)
     assert p.name == "marfago_gold.jsonl"
 
 
@@ -88,8 +96,6 @@ def test_dataset_path_prefers_sibling_ner_dataset(
     detector = labs / "ner-detector"
     dataset_repo = labs / "ner-dataset" / "datasets"
     dataset_repo.mkdir(parents=True)
-    bundled = detector / "benchmark" / "datasets"
-    bundled.mkdir(parents=True)
     custom = dataset_repo / "custom.jsonl"
     custom.write_text(
         json.dumps(
@@ -102,14 +108,13 @@ def test_dataset_path_prefers_sibling_ner_dataset(
         + "\n",
         encoding="utf-8",
     )
-    (bundled / "custom.jsonl").write_text('{"id": "old"}\n', encoding="utf-8")
     monkeypatch.setattr(
         "ner_detector.eval.loaders._PACKAGE_ROOT",
         detector,
     )
     monkeypatch.setattr(
-        "ner_detector.eval.loaders._DEFAULT_BENCHMARK_ROOT",
-        detector / "benchmark",
+        "ner_detector.eval.loaders._SIBLING_NER_DATASET",
+        labs / "ner-dataset",
     )
     resolved = dataset_path("custom")
     assert resolved == custom
@@ -118,8 +123,11 @@ def test_dataset_path_prefers_sibling_ner_dataset(
 
 
 def test_load_arxiv_gold() -> None:
+    from ner_detector.eval.gold_validate import validate_arxiv_gold
+
     examples = load_dataset("arxiv_gold")
     assert len(examples) == 10
+    validate_arxiv_gold(examples).raise_if_invalid()
     labels = {e.label for ex in examples for e in ex.entities}
     assert labels <= {
         "model",
@@ -133,3 +141,16 @@ def test_load_arxiv_gold() -> None:
     for ex in examples:
         for ent in ex.entities:
             assert ex.text[ent.start : ent.end] == ent.text
+
+
+def test_resolve_benchmark_root_sibling() -> None:
+    cfg = Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_generated.yaml"
+    root = resolve_benchmark_root("../ner-dataset", config_path=cfg)
+    assert (root / "datasets" / "synthetic_news_100.jsonl").is_file()
+
+
+def test_load_synthetic_from_resolved_root() -> None:
+    cfg = Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_generated.yaml"
+    root = resolve_benchmark_root("../ner-dataset", config_path=cfg)
+    examples = load_dataset("synthetic_news_100", root=root, max_examples=3)
+    assert len(examples) == 3

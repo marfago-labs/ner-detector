@@ -6,7 +6,7 @@ Workflows set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so JavaScript actions (c
 
 | Workflow | File | When it runs | Purpose |
 |----------|------|----------------|---------|
-| **CI** | `.github/workflows/ci.yml` | Every push/PR to `master`/`main` | `pytest` with ≥95% coverage (no ML download) |
+| **CI** | `.github/workflows/ci.yml` | Every push/PR to `master`/`main` | `pytest` with ≥95% coverage (no ML download); checks out sibling `ner-dataset` |
 | **Benchmark → Pages** | `.github/workflows/benchmark-pages.yml` | Push to `master`, manual | Full benchmark + publish `report.html` |
 
 ---
@@ -55,7 +55,9 @@ Set under **Settings → Secrets and variables → Actions → Variables** (repo
 | `BENCHMARK_OUTPUT_DIR` | `benchmark/results/latest` | Fixed output directory for the published report |
 | `BENCHMARK_DEPLOY_PAGES` | `true` | Set to `false` to skip GitHub Pages deploy (artifact upload still runs) |
 
-**CI tip:** use `BENCHMARK_REPEATS=1` (or `2`) on GitHub-hosted runners. Local `compare_backends.yaml` still defaults to `5` repeats.
+**CI tip:** use `BENCHMARK_REPEATS=1` on GitHub-hosted runners. For latency variance locally, pass `--repeats 5`.
+
+Gold JSONL files are loaded from the checked-out **[ner-dataset](https://github.com/marfago-labs/ner-dataset)** repo (`NER_DATASET_DIR=ner-dataset/datasets` in workflows). Clone both repos side by side locally, or set `NER_DATASET_DIR` to your gold folder.
 
 ### Download report without Pages
 

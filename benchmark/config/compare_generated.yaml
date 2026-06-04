@@ -1,5 +1,5 @@
-# Quick backend comparison on two ner-dataset gold files (full suite: compare_generated.yaml).
-repeats: 1  # use --repeats N for latency variance (clears model cache between rounds)
+# Benchmark all gold files from sibling ner-dataset repo.
+repeats: 1
 
 runs:
   - name: pattern
@@ -9,13 +9,18 @@ runs:
     backend: transformers
     model_id: dslim/bert-base-NER
     threshold: 0.5
-    # CoNLL PER/ORG/LOC only — not scored on arxiv_gold scientific labels.
     datasets:
       - synthetic_news_100
+      - synthetic_blog_100
+      - synthetic_transcript_100
+      - synthetic_scientific_100
+      - synthetic_mixed_100
 
   - name: gliner-medium
     backend: gliner
     model_id: urchade/gliner_medium-v2.1
+    # Must cover both synthetic gold (person/org/loc/date/number) and arxiv_gold
+    # (model/dataset/benchmark/metric/method). general_en labels yield ~0 on arxiv.
     labels:
       - person
       - organization
@@ -33,5 +38,9 @@ runs:
 datasets:
   - arxiv_gold
   - synthetic_news_100
+  - synthetic_blog_100
+  - synthetic_transcript_100
+  - synthetic_scientific_100
+  - synthetic_mixed_100
 
 label_map: unified

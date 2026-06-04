@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from ner_detector.config import clear_config_caches
 from ner_detector.registry import clear_backend_cache
+
+FIXTURE_BENCHMARK_ROOT = Path(__file__).resolve().parent / "fixtures"
 
 
 @pytest.fixture(autouse=True)

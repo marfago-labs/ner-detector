@@ -40,6 +40,7 @@ class BackendRunSpec:
     model_id: str | None = None
     labels: list[str] | None = None
     threshold: float = 0.5
+    datasets: list[str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,4 +49,4 @@ class BenchmarkConfig:
     datasets: list[str]
     label_map: str = "unified"
     benchmark_root: str | None = None
-    repeats: int = 5
+    repeats: int = 1

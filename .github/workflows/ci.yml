@@ -21,6 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/checkout@v4
+        with:
+          repository: marfago-labs/ner-dataset
+          path: ner-dataset
+
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -29,4 +34,6 @@ jobs:
         run: uv sync --extra dev
 
       - name: Tests (coverage ≥95%)
+        env:
+          NER_DATASET_DIR: ${{ github.workspace }}/ner-dataset/datasets
         run: uv run pytest tests/ -q --cov=ner_detector --cov-fail-under=95

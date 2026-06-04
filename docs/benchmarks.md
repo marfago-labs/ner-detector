@@ -12,10 +12,12 @@ uv sync --extra dev
 uv run python benchmark/run_benchmark.py --pattern-only
 ```
 
+Requires the sibling **[ner-dataset](https://github.com/marfago-labs/ner-dataset)** repo at `../ner-dataset/` (default in the marfago-labs monorepo), or set `NER_DATASET_DIR` to a `datasets/` directory.
+
 Output: `benchmark/results/run-<timestamp>/`
 
 - `report.md` — tables
-- `report.html` — **static SVG radar charts** (text-compressor style) per dataset + leaderboard table
+- `report.html` — **static SVG radar charts**, **label confusion matrices**, and leaderboard tables per section
 - `metrics.json` — machine-readable scores
 
 ## Full comparison (downloads models)
@@ -30,9 +32,11 @@ uv run python benchmark/run_benchmark.py
 | File | Role |
 |------|------|
 | `benchmark/config/compare_backends.yaml` | Which backends and datasets to run |
+| `benchmark/config/compare_generated.yaml` | All six gold files from `ner-dataset` |
 | `benchmark/config/label_maps.yaml` | Label normalization for scoring |
-| `benchmark/datasets/*.jsonl` | Shipped gold annotations (CI / offline) |
-| `../ner-dataset/datasets/*.jsonl` | Canonical gold from [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) (preferred when present) |
+| `../ner-dataset/datasets/*.jsonl` | **Canonical gold** from [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) |
+
+Benchmark YAML may set `benchmark_root: ../ner-dataset` (default resolution when omitted). Override with `NER_DATASET_DIR` pointing at a `datasets/` folder (used in CI when `ner-dataset` is checked out into the workspace).
 
 ### Gold JSONL format
 
@@ -46,13 +50,16 @@ uv run python benchmark/run_benchmark.py
 }
 ```
 
-### Datasets included
+### Datasets (ner-dataset)
 
 | Name | Description |
 |------|-------------|
-| `marfago_gold` | Domain snippets (person, org, location, arxiv_id, year, …) |
-| `conll_dev_sample` | Short CoNLL-style English news sentences |
 | `arxiv_gold` | 10 ML paper abstracts (models, datasets, benchmarks, metrics, methods) |
+| `synthetic_news_100` | Procedural news-style text (person, organization, location, date) |
+| `synthetic_blog_100` | Blog-style synthetic corpus |
+| `synthetic_scientific_100` | Scientific-style synthetic corpus |
+| `synthetic_transcript_100` | Transcript-style synthetic corpus |
+| `synthetic_mixed_100` | Mixed-domain synthetic corpus |
 
 `arxiv_gold` is built by the sibling repo **[ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator)** into **[ner-dataset](https://github.com/marfago-labs/ner-dataset)** by default:
 
@@ -62,11 +69,13 @@ uv sync --extra dev
 uv run build-arxiv-gold   # → ../ner-dataset/datasets/arxiv_gold.jsonl
 ```
 
-`load_dataset("arxiv_gold")` checks `NER_DATASET_DIR`, then `../ner-dataset/datasets/`, then `benchmark/datasets/` (shipped copy).
+`load_dataset("arxiv_gold")` checks `NER_DATASET_DIR`, then `../ner-dataset/datasets/`.
 
 The same tool can build gold from **YouTube** transcripts, a **folder** of `.txt`/`.md`/`.json` (blogs, docs), or a **JSONL** corpus (`uv run build-gold --source …`). See [ner-gold-generator docs](https://github.com/marfago-labs/ner-gold-generator/blob/main/docs/README.md).
 
-Add more gold files under `ner-dataset/datasets/` (or `benchmark/datasets/` for small bundled sets). For CoNLL-2003 exports, use Hugging Face [`eriktks/conll2003`](https://huggingface.co/datasets/eriktks/conll2003) and convert to the JSONL schema above.
+Add more gold files under `ner-dataset/datasets/`. For CoNLL-2003 exports, use Hugging Face [`eriktks/conll2003`](https://huggingface.co/datasets/eriktks/conll2003) and convert to the JSONL schema above.
+
+Small fixture corpora used only by unit tests live under `tests/fixtures/datasets/`.
 
 ## CLI
 
@@ -82,20 +91,22 @@ uv run python benchmark/run_benchmark.py --help
 | `--runs` | Subset of run names |
 | `--max-examples` | Cap examples per dataset |
 | `--pattern-only` | Skip ML backends |
-| `--repeats` | Run each backend×dataset N times (default **5**; mean±std latency, score stability) |
+| `--repeats` | Run each backend×dataset N times (default **1**; use N>1 for latency variance) |
 
 ## Metrics
 
 - **Strict F1**: exact character span + unified label
 - **Relaxed F1**: ≥50% span overlap + same label
-- **Latency**: ms per example (wall clock per trial). With `--repeats N`, reports **mean ± std** and min–max across trials (cache cleared each repeat).
+- **Latency**: ms per example (wall clock per trial). With `--repeats N`, reports **mean ± std** and min–max across trials (model cache cleared between repeat rounds, not between datasets).
 - **Score stability**: strict F1 must match across repeats; unstable runs are flagged in the report.
 
 ## Interpreting results
 
-- **`pattern`** on `marfago_gold`: regex baseline (arxiv_id, years, capitalized names).
-- **`bert-conll`** on `conll_dev_sample`: strong on PER/ORG/LOC/MISC-style gold.
+- **`pattern`** on synthetic corpora: regex baseline (arxiv_id, years, capitalized names where present).
+- **`bert-conll`** on `synthetic_news_100`: strong on person/organization/location-style gold.
 - **`gliner-medium`**: zero-shot; sensitive to `threshold` and `labels` in config.
+
+**`arxiv_gold` label schema:** gold uses scientific types (`model`, `dataset`, `benchmark`, `metric`, `method`, `number`, …), not CoNLL PER/ORG/LOC. `dslim/bert-base-NER` is **not benchmarked on `arxiv_gold`** (see per-run `datasets` in YAML); on synthetic corpora it scores normally. GLiNER must include the scientific label strings in config (see `compare_generated.yaml`). Expect modest strict F1 on `arxiv_gold` even when GLiNER is configured correctly — gold spans are often longer than model predictions.
 
 Do not rank backends on a single F1 number without matching label schemes and datasets.
 
@@ -114,5 +125,7 @@ benchmark = run_benchmark(
 write_report(benchmark)  # metrics.json, report.md, report.html
 ```
 
-Open `report.html` in a browser — light theme, static SVG charts, no JavaScript required.
+Open `report.html` (or `index.html`, same content) in a browser — light theme, static SVG charts, no JavaScript required.
+The results tab includes a **section index**: **Global (all datasets)** plus one block per gold file (leaderboard + radar + confusion matrices each).
+Radar charts plot **F1, precision, recall, and Speed** (Speed = `1 − ms/example÷1000`, clamped 0–1, with **1 s/example as the zero point**). Absolute ms/example is also in the leaderboard table.
 Use the **Metrics & methodology** tab for scoring definitions, benchmark process, and caveats (same tab pattern as text-compressor compare reports).

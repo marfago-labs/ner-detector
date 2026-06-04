@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ner_detector.eval.confusion import LabelConfusionMatrix, label_confusion_matrix
 from ner_detector.eval.label_map import normalize_label
 from ner_detector.eval.types import EvalSpan, GoldEntity, GoldExample
 from ner_detector.types import DetectedEntity
@@ -90,6 +91,20 @@ def _prf(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
     return precision, recall, f1
 
 
+def _match_document_counts(
+    gold: list[EvalSpan],
+    pred: list[EvalSpan],
+) -> tuple[int, int, int]:
+    """Calculate TP, FP, FN based on unique (label, lower(text)) sets per document."""
+    gold_set = {(g.label, g.text.strip().lower()) for g in gold}
+    pred_set = {(p.label, p.text.strip().lower()) for p in pred}
+    
+    tp = len(gold_set.intersection(pred_set))
+    fp = len(pred_set - gold_set)
+    fn = len(gold_set - pred_set)
+    return tp, fp, fn
+
+
 @dataclass
 class EntityScores:
     tp: int = 0
@@ -109,16 +124,34 @@ class EntityScores:
 class ScoreSummary:
     strict: EntityScores = field(default_factory=EntityScores)
     relaxed: EntityScores = field(default_factory=EntityScores)
+    document: EntityScores = field(default_factory=EntityScores)
     n_examples: int = 0
     n_gold_spans: int = 0
     n_pred_spans: int = 0
     skipped_predictions: int = 0
+    confusion_strict: LabelConfusionMatrix = field(default_factory=LabelConfusionMatrix.empty)
+    confusion_relaxed: LabelConfusionMatrix = field(default_factory=LabelConfusionMatrix.empty)
+
+    def merge(self, other: ScoreSummary) -> None:
+        """Accumulate counts and confusion matrices from another summary."""
+        self.strict.add(other.strict)
+        self.relaxed.add(other.relaxed)
+        self.document.add(other.document)
+        self.n_examples += other.n_examples
+        self.n_gold_spans += other.n_gold_spans
+        self.n_pred_spans += other.n_pred_spans
+        self.skipped_predictions += other.skipped_predictions
+        self.confusion_strict = self.confusion_strict.merge(other.confusion_strict)
+        self.confusion_relaxed = self.confusion_relaxed.merge(other.confusion_relaxed)
 
     def strict_prf(self) -> tuple[float, float, float]:
         return self.strict.precision_recall_f1()
 
     def relaxed_prf(self) -> tuple[float, float, float]:
         return self.relaxed.precision_recall_f1()
+
+    def document_prf(self) -> tuple[float, float, float]:
+        return self.document.precision_recall_f1()
 
 
 def score_example(
@@ -139,11 +172,15 @@ def score_example(
 
     strict = EntityScores(*_match_counts(gold_spans, pred_spans, relaxed=False))
     relaxed = EntityScores(*_match_counts(gold_spans, pred_spans, relaxed=True))
+    document = EntityScores(*_match_document_counts(gold_spans, pred_spans))
     return ScoreSummary(
         strict=strict,
         relaxed=relaxed,
+        document=document,
         n_examples=1,
         n_gold_spans=len(gold_spans),
         n_pred_spans=len(pred_spans),
         skipped_predictions=skipped,
+        confusion_strict=label_confusion_matrix(gold_spans, pred_spans, mode="strict"),
+        confusion_relaxed=label_confusion_matrix(gold_spans, pred_spans, mode="relaxed"),
     )

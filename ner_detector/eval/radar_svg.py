@@ -54,10 +54,8 @@ def _float_or_none(value: Any) -> float | None:
 
 
 NER_RADAR_AXES: tuple[RadarAxis, ...] = (
+    RadarAxis("document_f1", "Doc F1", lambda r: _float_or_none(r.get("document_f1"))),
     RadarAxis("strict_f1", "Strict F1", lambda r: _float_or_none(r.get("strict_f1"))),
-    RadarAxis("relaxed_f1", "Relaxed F1", lambda r: _float_or_none(r.get("relaxed_f1"))),
-    RadarAxis("precision", "Precision", lambda r: _float_or_none(r.get("precision"))),
-    RadarAxis("recall", "Recall", lambda r: _float_or_none(r.get("recall"))),
     RadarAxis("speed", "Speed", lambda r: _float_or_none(r.get("speed"))),
 )
 
@@ -209,8 +207,10 @@ def render_radar_section_html(
     return f"""
     <section class="block radar-section">
       <h2>Backend radar — {title}</h2>
-      <p class="radar-note">Each axis is on a 0–1 scale (higher is better). Speed is relative to the
-      slowest backend in this dataset. Polygon area is a quick composite index only.</p>
+      <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
+      Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
+      Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
+      not a ranking metric.</p>
       {err_block}
       <div class="radar-layout">
         <figure class="radar-figure">

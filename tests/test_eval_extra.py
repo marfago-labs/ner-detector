@@ -12,6 +12,7 @@ from ner_detector.eval.report import render_markdown_report
 from ner_detector.eval.runner import RunResult, load_benchmark_config, run_benchmark
 from ner_detector.eval.types import GoldEntity, GoldExample
 from ner_detector.types import DetectedEntity
+from tests.conftest import FIXTURE_BENCHMARK_ROOT
 
 
 def test_prediction_to_span_text_search() -> None:
@@ -30,12 +31,11 @@ def test_prediction_to_span_missing_returns_none() -> None:
 
 
 def test_runner_backend_failure(tmp_path: Path) -> None:
-    root = Path(__file__).resolve().parents[1] / "benchmark"
     config = tmp_path / "c.yaml"
     config.write_text(
         f"runs:\n  - name: bad\n    backend: gliner\n    model_id: x\n"
         f"datasets:\n  - marfago_gold\n"
-        f"benchmark_root: {root.as_posix()}\n",
+        f"benchmark_root: {FIXTURE_BENCHMARK_ROOT.as_posix()}\n",
         encoding="utf-8",
     )
 
@@ -56,7 +56,7 @@ def test_load_benchmark_config_ok(tmp_path: Path) -> None:
     )
     cfg = load_benchmark_config(path)
     assert cfg.runs[0].name == "p"
-    assert cfg.repeats == 5
+    assert cfg.repeats == 1
 
 
 def test_run_result_to_dict() -> None:

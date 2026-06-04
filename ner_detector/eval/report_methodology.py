@@ -207,16 +207,15 @@ def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
             )
         repeats_html = f"""
           <h3>Repeated trials ({repeats}×)</h3>
-          <p>Each backend×dataset cell is executed <strong>{repeats}</strong> times. Before every trial,
-          <code>clear_backend_cache()</code> runs so timing includes model load and inference (mitigates
-          one-off CPU allocation spikes).</p>
+          <p>Each backend×dataset cell is executed <strong>{repeats}</strong> times. The model cache is
+          cleared only between repeat rounds (not between datasets), so each repeat loads the backend once
+          and reuses it across all datasets in that round.</p>
           <ul>
             <li><strong>Latency</strong> — mean ± std of ms/example across trials; min–max in the stability table.</li>
-            <li><strong>Scores</strong> — strict/relaxed F1 and TP/FP/FN must match every trial; otherwise flagged unstable.</li>
-            <li><strong>Radar Speed</strong> — uses mean latency vs the slowest mean in that dataset.</li>
+            <li><strong>Scores</strong> — document, strict, and relaxed F1 and TP/FP/FN must match every trial; otherwise flagged unstable.</li>
           </ul>
           {unstable_note}
-          <p>CLI: <code>--repeats N</code> or <code>repeats: N</code> in benchmark YAML (default 5).</p>
+          <p>CLI: <code>--repeats N</code> or <code>repeats: N</code> in benchmark YAML (default 1).</p>
         """
 
     return f"""
@@ -247,7 +246,8 @@ def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
           <h3>Benchmark process</h3>
           <ol>
             <li>Read <code>benchmark/config/compare_backends.yaml</code> for run definitions and dataset names.</li>
-            <li>Load each dataset from <code>benchmark/datasets/&lt;name&gt;.jsonl</code> (or path in config).</li>
+            <li>Load each dataset from the configured <code>benchmark_root</code> (default: sibling
+            <code>../ner-dataset/datasets/&lt;name&gt;.jsonl</code>) or <code>NER_DATASET_DIR</code>.</li>
             <li>For each (run, dataset) pair: repeat <code>{repeats}</code> time(s) — clear backend cache, run all examples,
             score spans, record wall-clock latency (model load + inference each trial).</li>
             <li>Aggregate trials: mean ± std latency; verify score reproducibility across repeats.</li>
@@ -266,15 +266,29 @@ def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
           Predictions without resolvable character offsets in the source text are skipped and counted in
           <code>skipped_predictions</code>.</p>
           <dl>
-            <dt><code>marfago_gold</code></dt>
-            <dd>Domain snippets (person, organization, location, arxiv_id, year, …). Intended for
-            <code>pattern</code> and unified-label ML backends.</dd>
-            <dt><code>conll_dev_sample</code></dt>
-            <dd>Short English news sentences with CoNLL-style PER/ORG/LOC/MISC gold. BERT-NER is a strong
-            fit; <code>pattern</code> is a weak baseline here (different entity types).</dd>
+            <dt><code>arxiv_gold</code></dt>
+            <dd>ML paper abstracts with scientific entity types (model, dataset, benchmark, metric, …).
+            <code>bert-conll</code> is excluded via per-run <code>datasets</code> in YAML (CoNLL labels only).
+            Use GLiNER (or <code>pattern</code> for numbers) with matching label strings.</dd>
+            <dt><code>synthetic_*</code></dt>
+            <dd>Procedural gold corpora (news, blog, scientific, transcript, mixed) with unified
+            person/organization/location/date labels — good for BERT and GLiNER baselines.</dd>
           </dl>
 
           <h3>Scoring metrics</h3>
+
+          <div class="metric-block">
+            <h4>Document-level string overlap F1 (Doc F1)</h4>
+            <p><strong>Objective.</strong> Did the backend recover the same salient concepts as gold, regardless
+            of how many times each string appears in the text?</p>
+            <p><strong>How it is computed.</strong> Per example, form sets of <code>(label, lowercased text)</code>
+            from gold spans and predictions (after <code>label_maps.yaml</code>). TP = set intersection size;
+            FP = predictions not in gold; FN = gold not in predictions. Micro-averaged precision, recall, and F1
+            across all examples. Repeated spans with the same label and surface string count once.</p>
+            <p><strong>Leaderboard.</strong> Global and per-dataset tables are sorted by Doc F1 (higher is better).
+            Rank #1 row is highlighted in green. Use this metric when gold marks salient entities (e.g.
+            <code>arxiv_gold</code>) rather than every token-level mention.</p>
+          </div>
 
           <div class="metric-block">
             <h4>Strict span F1</h4>
@@ -283,8 +297,8 @@ def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
             <p><strong>How it is computed.</strong> Greedy one-to-one matching per example: each prediction
             matches at most one gold span with the same label and exact offsets; unmatched predictions are FP,
             unmatched gold are FN. Micro-averaged precision, recall, and F1 across all examples in the run.</p>
-            <p><strong>Leaderboard.</strong> Global table is sorted by strict F1 (higher is better). Rank #1 row
-            is highlighted in green.</p>
+            <p><strong>Use.</strong> Secondary table in the markdown report; penalizes extra mentions of the same
+            entity when gold annotates a single span.</p>
           </div>
 
           <div class="metric-block">
@@ -308,27 +322,38 @@ def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
           </div>
 
           <div class="metric-block">
-            <h4>Radar chart — Speed axis</h4>
-            <p><strong>Per dataset only.</strong> Speed = <code>1 − (latency ÷ max latency among backends
-            on that dataset)</code>. The slowest backend in that chart scores <strong>0</strong>; the fastest
-            scores <strong>1</strong>. A zero on Speed does <em>not</em> mean “no measurement” — it means
-            slowest in that comparison.</p>
-            <p>Other radar axes plot strict F1, relaxed F1, precision, and recall on a 0–1 scale (higher is
-            better). Polygon <strong>area</strong> is a visual composite index only; it weights all axes equally.</p>
+            <h4>Label confusion matrices</h4>
+            <p><strong>Per backend run</strong> (global and each dataset section). Rows are gold labels;
+            columns are predicted labels after <code>label_maps.yaml</code> normalization. Spans are paired
+            greedily (relaxed: IoU ≥ 0.5; strict: exact offsets). Diagonal cells = correct label at a paired
+            span. Column <code>∅ missed</code> = gold with no paired prediction; row <code>∅ spurious</code>
+            = prediction with no paired gold. Use relaxed matrices to diagnose label confusion; compare with
+            strict span pairing to separate boundary from type errors.</p>
+          </div>
+
+          <div class="metric-block">
+            <h4>Radar chart</h4>
+            <p><strong>Per dataset only.</strong> Three axes — Doc F1, strict span F1, and Speed — on a 0–1 scale
+            (higher is better). Quality metrics use raw scores. Speed uses a fixed reference:
+            <code>1 − (ms/example ÷ 1000)</code>, clamped to 0–1, so one second per example maps to 0 on the
+            Speed axis (not relative to the slowest backend in the chart).</p>
+            <p>Absolute ms/example remains in the leaderboard table. Polygon <strong>area</strong> is a visual
+            composite index only; it weights all axes equally and is not a substitute for reading Doc F1 and
+            latency separately.</p>
           </div>
 
           <h3>Label normalization</h3>
           <p>Backend labels (e.g. CoNLL <code>PER</code>, GLiNER <code>person</code>) are mapped through
           <code>label_maps.yaml</code> before scoring. Comparing F1 across datasets with incompatible label
-          schemes is misleading — e.g. do not rank <code>pattern</code> on CoNLL using strict F1 alone.</p>
+          schemes is misleading — e.g. do not rank <code>pattern</code> on CoNLL using Doc F1 alone.</p>
 
           <h3>How to use this scorecard</h3>
           <ul>
             <li>Pick the dataset that matches your deployment labels and language.</li>
-            <li>Prefer <strong>strict F1</strong> for span-extraction contracts; use <strong>relaxed F1</strong>
-            to diagnose boundary issues.</li>
-            <li>Read <strong>latency</strong> from the table (absolute ms); use radar Speed only for relative
-            ranking within one dataset.</li>
+            <li>Prefer <strong>Doc F1</strong> for salient-entity / concept extraction; use <strong>strict F1</strong>
+            when every span offset must match gold; use <strong>relaxed F1</strong> to diagnose boundary issues.</li>
+            <li>Read <strong>latency</strong> from the leaderboard table (absolute ms/example).</li>
+            <li>Use <strong>label confusion matrices</strong> to see which gold types are missed or mis-tagged.</li>
             <li>Treat <code>pattern</code> as a fast regex baseline, not a ceiling for ML quality.</li>
           </ul>
 
