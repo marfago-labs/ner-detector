@@ -105,10 +105,23 @@ uv run python benchmark/run_benchmark.py --help
 - **`pattern`** on synthetic corpora: regex baseline (arxiv_id, years, capitalized names where present).
 - **`bert-conll`** on `synthetic_news_100`: strong on person/organization/location-style gold.
 - **`gliner-medium`**: zero-shot; sensitive to `threshold` and `labels` in config.
+- **`gliner-bi-large`**: same `gliner` backend and `predict_entities` API; use a **lower threshold** (e.g. `0.3`) than uni-encoder models — bi-encoder logits are calibrated lower, so `0.5` collapses recall.
+- **`llm-mock`**: deterministic LLM backend (`provider: mock`) for offline benchmarks; uses pattern-style extraction wrapped as JSON. No PR/ROC curves (no score threshold sweep).
+- **`llm-nemotron-super`**: live OpenRouter with **`nvidia/nemotron-3-super-120b-a12b:free`** (Nemotron 3 Super 120B, free tier). Requires `OPENROUTER_API_KEY` in `.env` and `uv sync --extra llm`. (`nvidia/nemotron-3-ultra:free` is listed on the site but not yet a valid API model ID.)
 
 **`arxiv_gold` label schema:** gold uses scientific types (`model`, `dataset`, `benchmark`, `metric`, `method`, `number`, …), not CoNLL PER/ORG/LOC. `dslim/bert-base-NER` is **not benchmarked on `arxiv_gold`** (see per-run `datasets` in YAML); on synthetic corpora it scores normally. GLiNER must include the scientific label strings in config (see `compare_generated.yaml`). Expect modest strict F1 on `arxiv_gold` even when GLiNER is configured correctly — gold spans are often longer than model predictions.
 
 Do not rank backends on a single F1 number without matching label schemes and datasets.
+
+## Threshold curves (PR / ROC)
+
+For backends that filter by score (`transformers`, `gliner`), each benchmark run also writes:
+
+- `curves.json` — PR/ROC points and AUC per run×dataset (`strict`, `relaxed`, `document`)
+- `curves/section.html` — SVG chart fragment
+- HTML report tab **Threshold curves** (unless `--no-curves`)
+
+Inference uses **`threshold: 0`** once per backend×dataset; curves sweep candidate scores from high to low. **PR** recall is micro-averaged over gold units. **ROC** is proposal-level (how well scores rank correct vs incorrect *proposed* spans). Use PR to pick an operating threshold; bi-encoder models typically need a lower cutoff than uni-encoder GLiNER.
 
 ## Python API
 

@@ -16,10 +16,13 @@ If `input` is omitted, text is read from **stdin**.
 |------|-------|---------|-------------|
 | `input` | — | — | Inline text, or file path when `--file` is set |
 | `--file` | `-f` | off | Treat `input` as a path to a UTF-8 text file |
-| `--backend` | `-b` | from `ner.yaml` | Override profile backend |
-| `--model` | `-m` | from `ner.yaml` / catalog | Override Hugging Face model id |
+| `--backend` | `-b` | from `ner.yaml` | Override profile backend (`pattern`, `transformers`, `gliner`, `llm`) |
+| `--model` | `-m` | from `ner.yaml` / catalog | Override model id (HF slug or OpenRouter model) |
 | `--labels` | `-l` | from `ner.yaml` | Comma-separated; overrides profile |
-| `--threshold` | `-t` | from `ner.yaml` | Minimum confidence score |
+| `--threshold` | `-t` | from `ner.yaml` | Minimum confidence score (ML backends) |
+| `--provider` | — | from `ner.yaml` | LLM provider: `mock` or `openrouter` |
+| `--temperature` | — | from `ner.yaml` | LLM sampling temperature |
+| `--max-chars` | — | from `ner.yaml` | Max characters per LLM chunk |
 | `--format` | — | `json` | `json` or `text` (tab-separated) |
 | `--config` | `-c` | `config/ner.yaml` or `NER_CONFIG_PATH` | Runtime profile (backend, model, …) |
 | `--list-models` | — | off | Print `config/default_models.yaml` and exit |
@@ -27,9 +30,9 @@ If `input` is omitted, text is read from **stdin**.
 
 CLI flags override values from `config/ner.yaml`.
 
-## GLiNER labels
+## GLiNER / LLM labels
 
-When the resolved backend is `gliner` and no labels are set in the profile or CLI:
+When the resolved backend is `gliner` or `llm` and no labels are set in the profile or CLI:
 
 1. Use `labels` from `config/ner.yaml` if present.
 2. Else resolve `label_preset` from `ner.yaml` (default `general_en`) against `label_presets` in `config/default_models.yaml`.
@@ -71,8 +74,9 @@ uv run python run.py -c profiles/gliner.yaml "Bill Gates founded Microsoft."
 
 # One-off CLI overrides (ignore ner.yaml for that run)
 uv sync --extra ml --extra gliner
+uv sync --extra llm
+uv run python run.py -b llm --provider mock -m mock/ner -l "person,organization" "Alice works at OpenAI."
 uv run python run.py -b transformers -m dslim/bert-base-NER "Alice works at OpenAI."
-uv run python run.py -b gliner -l "person,company,city" "Bill Gates founded Microsoft."
 
 # Model catalog (not the active profile)
 uv run python run.py --list-models

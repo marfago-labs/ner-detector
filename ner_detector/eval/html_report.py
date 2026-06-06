@@ -14,6 +14,8 @@ from ner_detector.eval.radar_svg import (
 from ner_detector.eval.metrics import ScoreSummary
 from ner_detector.eval.runner import BenchmarkResult, RunResult, load_benchmark_config
 from ner_detector.eval.repeat_stats import format_latency_mean_std
+from ner_detector.eval.curve_svg import curve_chart_css, render_curves_section_html
+from ner_detector.eval.curve_runner import ThresholdCurvesResult
 from ner_detector.eval.report_methodology import (
     render_ner_methodology_content,
     render_report_tabs,
@@ -580,7 +582,23 @@ def _dataset_section(
     """
 
 
-def render_html_report(benchmark: BenchmarkResult) -> str:
+def _curves_tab_html(curves: ThresholdCurvesResult | None) -> str | None:
+    if curves is None or not curves.records:
+        return None
+    ok = [r for r in curves.records if not r.error]
+    if not ok:
+        return None
+    intro = """
+    <p class="notice">PR/ROC curves use one inference pass at <code>threshold=0</code> per backend×dataset.
+    PR recall is micro-averaged over gold units; ROC is proposal-level (ranking correct vs incorrect candidates).</p>
+    """
+    return intro + render_curves_section_html(curves.to_dict())
+
+
+def render_html_report(
+    benchmark: BenchmarkResult,
+    curves: ThresholdCurvesResult | None = None,
+) -> str:
     config_path = html.escape(str(benchmark.config_path))
     output_dir = html.escape(str(benchmark.output_dir))
 
@@ -629,11 +647,14 @@ def render_html_report(benchmark: BenchmarkResult) -> str:
     """
 
     methodology_html = render_ner_methodology_content(benchmark)
+    curves_html = _curves_tab_html(curves)
     tabbed_body = render_report_tabs(
         tab_prefix="ner-bench",
         results_html=results_html,
         methodology_html=methodology_html,
+        curves_html=curves_html,
     )
+    has_curves = curves_html is not None
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -643,8 +664,9 @@ def render_html_report(benchmark: BenchmarkResult) -> str:
   <title>NER backend benchmark — ner-detector</title>
   <style>
     {REPORT_PAGE_CSS}
-    {report_tab_styles("ner-bench")}
+    {report_tab_styles("ner-bench", has_curves=has_curves)}
     {RADAR_CHART_CSS}
+    {curve_chart_css() if has_curves else ""}
     .err {{ color: #b91c1c; font-size: 0.84rem; }}
   </style>
 </head>
@@ -666,8 +688,13 @@ def render_html_report(benchmark: BenchmarkResult) -> str:
 """
 
 
-def write_html_report(benchmark: BenchmarkResult, path: Path) -> Path:
-    content = render_html_report(benchmark)
+def write_html_report(
+    benchmark: BenchmarkResult,
+    path: Path,
+    *,
+    curves: ThresholdCurvesResult | None = None,
+) -> Path:
+    content = render_html_report(benchmark, curves=curves)
     path.write_text(content, encoding="utf-8")
     if path.name != "index.html":
         index_path = path.parent / "index.html"

@@ -8,6 +8,7 @@ Research sources: [Hugging Face Hub](https://huggingface.co/models?pipeline_tag=
 |------|---------------------|---------------|
 | Fixed English labels (PER, ORG, LOC, MISC) | **Transformers** token-classification | `dslim/bert-base-NER` |
 | Custom entity types at runtime | **GLiNER** zero-shot | `urchade/gliner_medium-v2.1` |
+| Salient / scientific concepts via prompt | **LLM** (OpenRouter or mock) | `nvidia/nemotron-3-super-120b-a12b:free` |
 | Many labels, production throughput | **GLiNER bi-encoder** | `knowledgator/gliner-bi-base-v2.0` |
 | Multilingual (20+ langs) | GLiNER-X or `gliner_multi` | `knowledgator/gliner-x-large` |
 | Clinical / biomedical | Domain fine-tunes | `IEETA/MultiClinNER-MIXED`, OpenMed NER |
@@ -50,6 +51,7 @@ model.predict_entities(text, ["person", "company", "location"], threshold=0.5)
 - **Benchmark:** ~60% avg CrossNER; ~98% of large model at 2.6× speed (per model card)
 - **Why:** When you need **hundreds or thousands** of entity types without linear slowdown
 - **Link:** https://huggingface.co/knowledgator/gliner-bi-base-v2.0
+- **In this repo:** benchmarked as `gliner-bi-large` (`knowledgator/gliner-bi-large-v2.0`) with **`threshold: 0.3`** (not `0.5` like uni-encoder GLiNER)
 
 ## Tier 2 — specialized / newer
 
@@ -81,8 +83,9 @@ model.predict_entities(text, ["person", "company", "location"], threshold=0.5)
 | `pattern` | regex rules | (core only) |
 | `transformers` | `dslim/bert-base-NER` | `--extra ml` |
 | `gliner` | `urchade/gliner_medium-v2.1` | `--extra gliner` (+ `ml` recommended) |
+| `llm` | `nvidia/nemotron-3-super-120b-a12b:free` | `--extra llm`; `OPENROUTER_API_KEY` for live OpenRouter |
 
-Set the active model in **`config/ner.yaml`** (`model_id`), or override per run with CLI `--model` / Python `model_id=`. Catalog defaults are in `config/default_models.yaml`.
+Set the active model in **`config/ner.yaml`** (`model_id`, `provider`), or override per run with CLI `--model` / `--provider` / Python kwargs. Catalog defaults are in `config/default_models.yaml`.
 
 ## References
 

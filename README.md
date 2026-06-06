@@ -1,6 +1,6 @@
 # ner-detector
 
-Named entity recognition (NER) with **pluggable backends**: fast regex (`pattern`), fixed-label BERT (`transformers`), and zero-shot GLiNER (`gliner`).
+Named entity recognition (NER) with **pluggable backends**: deterministic regex (`pattern`), fixed-label BERT (`transformers`), zero-shot GLiNER (`gliner`), and chat LLM (`llm` via OpenRouter or mock).
 
 Part of [marfago-labs](https://github.com/marfago-labs). Standalone experiment for entity extraction and evaluation pipelines.
 
@@ -24,6 +24,7 @@ Install ML backends as needed:
 ```bash
 uv sync --extra dev --extra ml          # transformers + torch
 uv sync --extra dev --extra ml --extra gliner
+uv sync --extra dev --extra llm         # OpenRouter HTTP client (mock works without API key)
 ```
 
 ## Configuration

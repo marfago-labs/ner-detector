@@ -1,7 +1,7 @@
 [project]
 name = "ner-detector"
 version = "0.1.0"
-description = "Named entity recognition with pluggable Hugging Face and GLiNER backends"
+description = "Named entity recognition with pluggable deterministic, ML, and LLM backends"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -19,6 +19,9 @@ ml = [
 ]
 gliner = [
     "gliner>=0.2.0",
+]
+llm = [
+    "httpx>=0.27.0",
 ]
 dev = [
     "pytest>=8.3.0",

@@ -33,6 +33,24 @@ runs:
   - name: gliner-bi-large
     backend: gliner
     model_id: knowledgator/gliner-bi-large-v2.0
+    # Bi-encoder scores are calibrated lower than uni-encoder GLiNER; 0.5 suppresses recall.
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    threshold: 0.3
+
+  - name: nuner-zero
+    backend: nuner
+    model_id: numind/NuNER_Zero
     labels:
       - person
       - organization
@@ -46,6 +64,44 @@ runs:
       - metric
       - method
     threshold: 0.5
+
+  - name: llm-mock
+    backend: llm
+    provider: mock
+    model_id: mock/ner
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    temperature: 0
+
+  - name: llm-gpt-oss
+    backend: llm
+    provider: openrouter
+    model_id: openai/gpt-oss-120b:free
+    label_definition_preset: scientific
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    temperature: 0
+    max_chars: 8000
 
 datasets:
   - arxiv_gold

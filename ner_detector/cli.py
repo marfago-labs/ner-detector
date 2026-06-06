@@ -45,7 +45,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--backend",
         "-b",
-        choices=("pattern", "transformers", "gliner"),
+        choices=("pattern", "transformers", "gliner", "nuner", "generative_ner", "llm"),
         default=None,
         help="NER backend (overrides config file)",
     )
@@ -67,6 +67,23 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help="Minimum confidence score (overrides config file)",
+    )
+    parser.add_argument(
+        "--provider",
+        default=None,
+        help="LLM provider: mock or openrouter (overrides config file)",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=None,
+        help="LLM sampling temperature (overrides config file)",
+    )
+    parser.add_argument(
+        "--max-chars",
+        type=int,
+        default=None,
+        help="Max characters per LLM chunk (overrides config file)",
     )
     parser.add_argument(
         "--format",
@@ -119,6 +136,9 @@ def main(argv: list[str] | None = None) -> int:
         model_id=args.model,
         labels=_parse_labels(args.labels),
         threshold=args.threshold,
+        provider=args.provider,
+        temperature=args.temperature,
+        max_chars=args.max_chars,
     )
 
     if args.show_config:
@@ -128,6 +148,11 @@ def main(argv: list[str] | None = None) -> int:
             "model_id": settings.model_id,
             "threshold": settings.threshold,
             "labels": settings.labels,
+            "label_definitions": settings.label_definitions,
+            "few_shot_examples": settings.few_shot_examples,
+            "provider": settings.provider,
+            "temperature": settings.temperature,
+            "max_chars": settings.max_chars,
         }
         print(json.dumps(payload, indent=2))
         return 0
@@ -156,9 +181,23 @@ def main(argv: list[str] | None = None) -> int:
             model_id=settings.model_id,
             labels=settings.labels,
             threshold=settings.threshold,
+            provider=settings.provider if backend == "llm" else None,
+            temperature=settings.temperature if backend == "llm" else None,
+            max_chars=settings.max_chars if backend == "llm" else None,
+            label_definitions=settings.label_definitions if backend == "llm" else None,
+            few_shot_examples=settings.few_shot_examples if backend == "llm" else None,
         )
     except ImportError as exc:
-        extra = "ml" if backend == "transformers" else "gliner"
+        if backend == "transformers":
+            extra = "ml"
+        elif backend in {"gliner", "nuner"}:
+            extra = "gliner"
+        elif backend == "generative_ner":
+            extra = "ml"
+        elif backend == "llm":
+            extra = "llm"
+        else:
+            extra = "dev"
         print(
             f"Missing dependency for backend {backend!r}: {exc}\n"
             f"Install with: uv sync --extra {extra}",

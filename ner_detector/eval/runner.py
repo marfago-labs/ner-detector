@@ -10,6 +10,7 @@ from typing import Any
 
 import yaml
 
+from ner_detector.config import resolve_label_definitions
 from ner_detector.detect import detect_entities
 from ner_detector.eval.loaders import benchmark_root, load_dataset, resolve_benchmark_root
 from ner_detector.eval.metrics import ScoreSummary, score_example
@@ -118,6 +119,18 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
                 labels=item.get("labels"),
                 threshold=float(item.get("threshold", 0.5)),
                 datasets=run_datasets,
+                provider=item.get("provider"),
+                temperature=(
+                    float(item["temperature"])
+                    if item.get("temperature") is not None
+                    else None
+                ),
+                max_chars=(
+                    int(item["max_chars"]) if item.get("max_chars") is not None else None
+                ),
+                label_definition_preset=item.get("label_definition_preset"),
+                label_definitions=item.get("label_definitions"),
+                few_shot_examples=item.get("few_shot_examples"),
             )
         )
 
@@ -137,6 +150,30 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
 
 
 _SCORE_EPS = 1e-9
+
+
+def _detect_for_spec(
+    text: str,
+    spec: BackendRunSpec,
+) -> list:
+    backend: NerBackend = spec.backend  # type: ignore[assignment]
+    label_definitions = resolve_label_definitions(
+        backend=backend,
+        label_definitions=spec.label_definitions,
+        label_definition_preset=spec.label_definition_preset,
+    )
+    return detect_entities(
+        text,
+        backend=backend,
+        model_id=spec.model_id,
+        labels=spec.labels,
+        threshold=spec.threshold,
+        provider=spec.provider,
+        temperature=spec.temperature,
+        max_chars=spec.max_chars,
+        label_definitions=label_definitions,
+        few_shot_examples=spec.few_shot_examples,
+    )
 
 
 def _strict_f1(result: RunResult) -> float:
@@ -228,6 +265,9 @@ def _warmup_backend(spec: BackendRunSpec, examples: list[GoldExample]) -> float:
         model_id=spec.model_id,
         labels=spec.labels,
         threshold=spec.threshold,
+        provider=spec.provider,
+        temperature=spec.temperature,
+        max_chars=spec.max_chars,
     )
     return (time.perf_counter() - t0) * 1000
 
@@ -250,34 +290,29 @@ def _run_backend_on_dataset(
             error=str(exc),
         )
     t0 = time.perf_counter()
-    backend: NerBackend = spec.backend  # type: ignore[assignment]
-    try:
-        for ex in examples:
-            preds = detect_entities(
-                ex.text,
-                backend=backend,
-                model_id=spec.model_id,
-                labels=spec.labels,
-                threshold=spec.threshold,
-            )
+    example_errors: list[str] = []
+    for ex in examples:
+        try:
+            preds = _detect_for_spec(ex.text, spec)
             ex_scores = score_example(ex, preds, label_map=label_map)
             _merge_summary(summary, ex_scores)
-    except Exception as exc:  # noqa: BLE001 — surface backend failures in report
-        elapsed = (time.perf_counter() - t0) * 1000
-        return RunResult(
-            run_name=spec.name,
-            backend=spec.backend,
-            model_id=spec.model_id,
-            dataset="",
-            summary=summary,
-            latency_ms_total=elapsed,
-            latency_ms_per_example=elapsed / max(summary.n_examples, 1),
-            latency_load_ms=load_ms,
-            error=str(exc),
-        )
+        except Exception as exc:  # noqa: BLE001 — skip failed examples, keep partial scores
+            example_errors.append(f"{ex.id}: {exc}")
 
     elapsed = (time.perf_counter() - t0) * 1000
     n = max(summary.n_examples, 1)
+    error: str | None = None
+    if example_errors:
+        total = len(examples)
+        error = (
+            f"{len(example_errors)}/{total} examples failed; "
+            f"first: {example_errors[0]}"
+        )
+        if len(example_errors) > 1:
+            error += f"; last: {example_errors[-1]}"
+    elif summary.n_examples == 0 and examples:
+        error = "all examples failed"
+
     return RunResult(
         run_name=spec.name,
         backend=spec.backend,
@@ -287,7 +322,7 @@ def _run_backend_on_dataset(
         latency_ms_total=elapsed,
         latency_ms_per_example=elapsed / n,
         latency_load_ms=load_ms,
-        error=None,
+        error=error,
     )
 
 

@@ -26,6 +26,12 @@ class NerRuntimeConfig(BaseModel):
     threshold: float = Field(default=0.5, ge=0.0, le=1.0)
     labels: list[str] | None = None
     label_preset: str = "general_en"
+    label_definition_preset: str | None = None
+    label_definitions: dict[str, str] | None = None
+    few_shot_examples: list[dict[str, Any]] | None = None
+    provider: str = "openrouter"
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_chars: int = Field(default=8000, ge=256, le=200_000)
 
     @field_validator("model_id", mode="before")
     @classmethod
@@ -46,6 +52,24 @@ class NerRuntimeConfig(BaseModel):
             return [str(item).strip() for item in value if str(item).strip()] or None
         return value
 
+    @field_validator("label_definitions", mode="before")
+    @classmethod
+    def _normalize_label_definitions(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return {str(key): str(item) for key, item in value.items()}
+        return value
+
+    @field_validator("few_shot_examples", mode="before")
+    @classmethod
+    def _normalize_few_shot_examples(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, dict)]
+        return value
+
 
 class ResolvedNerSettings(BaseModel):
     """Fully resolved settings after merging config file and CLI overrides."""
@@ -54,6 +78,11 @@ class ResolvedNerSettings(BaseModel):
     model_id: str | None
     threshold: float
     labels: list[str] | None
+    label_definitions: dict[str, str] | None = None
+    few_shot_examples: list[dict[str, Any]] | None = None
+    provider: str = "openrouter"
+    temperature: float = 0.0
+    max_chars: int = 8000
     config_path: Path | None = None
 
 
@@ -76,6 +105,12 @@ def default_model_id(backend: str) -> str:
         return "dslim/bert-base-NER"
     if backend == "gliner":
         return "urchade/gliner_medium-v2.1"
+    if backend == "nuner":
+        return "numind/NuNER_Zero"
+    if backend == "generative_ner":
+        return "Universal-NER/UniNER-7B-type"
+    if backend == "llm":
+        return "openai/gpt-oss-120b:free"
     return ""
 
 
@@ -112,6 +147,16 @@ def resolve_label_preset(preset_name: str) -> list[str] | None:
     return None
 
 
+def resolve_label_definition_preset(preset_name: str) -> dict[str, str] | None:
+    presets = load_model_config().get("label_definition_presets", {})
+    if not isinstance(presets, dict):
+        return None
+    preset = presets.get(preset_name)
+    if isinstance(preset, dict):
+        return {str(key): str(value) for key, value in preset.items()}
+    return None
+
+
 def resolve_labels(
     *,
     backend: NerBackend,
@@ -120,8 +165,23 @@ def resolve_labels(
 ) -> list[str] | None:
     if labels:
         return labels
-    if backend == "gliner":
+    if backend in {"gliner", "nuner", "generative_ner", "llm"}:
         return resolve_label_preset(label_preset) or resolve_label_preset("general_en")
+    return None
+
+
+def resolve_label_definitions(
+    *,
+    backend: NerBackend,
+    label_definitions: dict[str, str] | None,
+    label_definition_preset: str | None,
+) -> dict[str, str] | None:
+    if backend != "llm":
+        return None
+    if label_definitions:
+        return label_definitions
+    if label_definition_preset:
+        return resolve_label_definition_preset(label_definition_preset)
     return None
 
 
@@ -132,6 +192,11 @@ def resolve_ner_settings(
     model_id: str | None = None,
     labels: list[str] | None = None,
     threshold: float | None = None,
+    provider: str | None = None,
+    temperature: float | None = None,
+    max_chars: int | None = None,
+    label_definitions: dict[str, str] | None = None,
+    few_shot_examples: list[dict[str, Any]] | None = None,
 ) -> ResolvedNerSettings:
     """Merge YAML config with CLI overrides (CLI wins)."""
     path = Path(config_path) if config_path else default_ner_config_path()
@@ -140,6 +205,9 @@ def resolve_ner_settings(
     resolved_backend = backend if backend is not None else file_cfg.backend
     resolved_threshold = threshold if threshold is not None else file_cfg.threshold
     resolved_labels = labels if labels is not None else file_cfg.labels
+    resolved_provider = provider if provider is not None else file_cfg.provider
+    resolved_temperature = temperature if temperature is not None else file_cfg.temperature
+    resolved_max_chars = max_chars if max_chars is not None else file_cfg.max_chars
 
     resolved_model = model_id if model_id is not None else file_cfg.model_id
     if resolved_model is None and resolved_backend != "pattern":
@@ -151,12 +219,29 @@ def resolve_ner_settings(
         labels=resolved_labels,
         label_preset=file_cfg.label_preset,
     )
+    resolved_label_definitions = resolve_label_definitions(
+        backend=resolved_backend,
+        label_definitions=(
+            label_definitions if label_definitions is not None else file_cfg.label_definitions
+        ),
+        label_definition_preset=file_cfg.label_definition_preset,
+    )
+    resolved_few_shot = (
+        few_shot_examples
+        if few_shot_examples is not None
+        else file_cfg.few_shot_examples
+    )
 
     return ResolvedNerSettings(
         backend=resolved_backend,
         model_id=resolved_model,
         threshold=resolved_threshold,
         labels=resolved_labels,
+        label_definitions=resolved_label_definitions,
+        few_shot_examples=resolved_few_shot,
+        provider=resolved_provider,
+        temperature=resolved_temperature,
+        max_chars=resolved_max_chars,
         config_path=path if path.is_file() else None,
     )
 

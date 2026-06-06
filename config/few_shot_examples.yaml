@@ -1,0 +1,11 @@
+# Few-shot examples for LLM NER (PromptNER-style). Referenced from ner.yaml via few_shot_examples.
+- text: "GPT-4 was trained by OpenAI."
+  entities:
+    - text: GPT-4
+      label: model
+    - text: OpenAI
+      label: organization
+- text: "We evaluate on ImageNet and report top-1 accuracy."
+  entities:
+    - text: ImageNet
+      label: dataset

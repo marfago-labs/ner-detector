@@ -59,6 +59,42 @@ def test_load_benchmark_config_errors(tmp_path: Path) -> None:
         load_benchmark_config(nodatasets)
 
 
+def test_load_benchmark_config_llm_fields(tmp_path: Path) -> None:
+    cfg = tmp_path / "llm.yaml"
+    cfg.write_text(
+        "runs:\n"
+        "  - name: llm-m\n"
+        "    backend: llm\n"
+        "    provider: mock\n"
+        "    model_id: mock/ner\n"
+        "    temperature: 0\n"
+        "    max_chars: 4000\n"
+        "datasets:\n  - marfago_gold\n",
+        encoding="utf-8",
+    )
+    loaded = load_benchmark_config(cfg)
+    run = loaded.runs[0]
+    assert run.provider == "mock"
+    assert run.model_id == "mock/ner"
+    assert run.temperature == 0.0
+    assert run.max_chars == 4000
+
+
+def test_load_benchmark_config_label_definition_preset(tmp_path: Path) -> None:
+    cfg = tmp_path / "llm.yaml"
+    cfg.write_text(
+        "runs:\n"
+        "  - name: llm-sci\n"
+        "    backend: llm\n"
+        "    provider: openrouter\n"
+        "    label_definition_preset: scientific\n"
+        "datasets:\n  - arxiv_gold\n",
+        encoding="utf-8",
+    )
+    run = load_benchmark_config(cfg).runs[0]
+    assert run.label_definition_preset == "scientific"
+
+
 def test_report_shows_errors(tmp_path: Path) -> None:
     from ner_detector.eval.runner import BenchmarkResult, RunResult
 
@@ -191,6 +227,36 @@ def test_run_compare_generated_pattern_all_datasets(tmp_path: Path) -> None:
     for name in datasets:
         assert f">{name}</h2>" in html or f"dataset-{_section_id(name)}" in html
     assert (out / "index.html").is_file()
+
+
+def test_runner_continues_after_example_failure(tmp_path: Path) -> None:
+    from ner_detector.eval.runner import _run_backend_on_dataset
+    from ner_detector.eval.types import BackendRunSpec
+
+    examples = load_dataset("marfago_gold", root=FIXTURE_BENCHMARK_ROOT, max_examples=2)
+    calls = {"n": 0}
+
+    def flaky_detect(text: str, spec, **kwargs: object) -> list[DetectedEntity]:
+        del text, spec, kwargs
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ValueError("boom")
+        ent = examples[1].entities[0]
+        return [
+            DetectedEntity(
+                text=ent.text,
+                label=ent.label,
+                start=ent.start,
+                end=ent.end,
+            ),
+        ]
+
+    spec = BackendRunSpec(name="p", backend="pattern")
+    with patch("ner_detector.eval.runner._detect_for_spec", flaky_detect):
+        result = _run_backend_on_dataset(spec, examples, label_map="unified")
+    assert result.summary.n_examples == 1
+    assert result.error is not None
+    assert "1/2 examples failed" in result.error
 
 
 def _section_id(name: str) -> str:

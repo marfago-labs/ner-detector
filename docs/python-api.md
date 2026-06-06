@@ -7,10 +7,13 @@ from ner_detector import detect_entities, DetectedEntity
 
 entities: list[DetectedEntity] = detect_entities(
     "Alice Smith joined OpenAI in 2024.",
-    backend="pattern",           # "pattern" | "transformers" | "gliner"
-    model_id=None,               # HF id; backend default if None
-    labels=None,                 # GLiNER / pattern filter
-    threshold=0.5,
+    backend="pattern",           # "pattern" | "transformers" | "gliner" | "llm"
+    model_id=None,               # catalog default if None
+    labels=None,                 # GLiNER / LLM label list
+    threshold=0.5,               # ML backends only
+    provider=None,               # LLM: "mock" | "openrouter"
+    temperature=None,            # LLM sampling temperature
+    max_chars=None,              # LLM chunk size
 )
 ```
 
@@ -29,35 +32,39 @@ entities: list[DetectedEntity] = detect_entities(
 ## Registry (advanced)
 
 ```python
-from ner_detector.registry import create_backend, clear_backend_cache
+from ner_detector.registry import BackendOptions, create_backend, clear_backend_cache
 
-backend = create_backend("transformers", model_id="dslim/bert-base-NER")
-entities = backend.detect(text, threshold=0.5)
+backend = create_backend(
+    "llm",
+    model_id="mock/ner",
+    options=BackendOptions(provider="mock", temperature=0.0),
+)
+entities = backend.detect(text, labels=["person", "organization"])
 clear_backend_cache()  # tests / long-running processes
 ```
 
-Backends are singleton-cached per `(backend, model_id)`.
+Backends are singleton-cached per `(backend, model_id, …)`; LLM cache key includes `provider`, `temperature`, and `max_chars`.
 
 ## Configuration
 
 ```python
 from ner_detector.config import load_ner_config, resolve_ner_settings
 
-# From config/ner.yaml (or NER_CONFIG_PATH)
 profile = load_ner_config()
 
-# Merge file + overrides (CLI-style)
 settings = resolve_ner_settings(
-    backend="gliner",
-    model_id=None,
-    threshold=0.6,
+    backend="llm",
+    provider="mock",
+    model_id="mock/ner",
 )
 entities = detect_entities(
     text,
     backend=settings.backend,
     model_id=settings.model_id,
     labels=settings.labels,
-    threshold=settings.threshold,
+    provider=settings.provider,
+    temperature=settings.temperature,
+    max_chars=settings.max_chars,
 )
 ```
 

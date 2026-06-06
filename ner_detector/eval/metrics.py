@@ -50,6 +50,37 @@ def prediction_to_span(
     return EvalSpan(start=start, end=end, label=label, text=surface)
 
 
+def match_prediction_to_gold(
+    pred: EvalSpan,
+    gold: list[EvalSpan],
+    matched_gold: set[int],
+    *,
+    mode: str,
+) -> int | None:
+    """Return index of first unmatched gold span that matches ``pred``, or None."""
+    for i, g in enumerate(gold):
+        if i in matched_gold:
+            continue
+        if mode == "document":
+            if (g.label, g.text.strip().lower()) == (pred.label, pred.text.strip().lower()):
+                return i
+            continue
+        if g.label != pred.label:
+            continue
+        if mode == "strict" and g.as_tuple() == pred.as_tuple():
+            return i
+        if mode == "relaxed" and _overlap_ratio(g.start, g.end, pred.start, pred.end) >= 0.5:
+            return i
+    return None
+
+
+def count_gold_units(gold: list[EvalSpan], *, mode: str) -> int:
+    """Number of gold units for recall denominator (spans or unique document keys)."""
+    if mode == "document":
+        return len({(g.label, g.text.strip().lower()) for g in gold})
+    return len(gold)
+
+
 def _match_counts(
     gold: list[EvalSpan],
     pred: list[EvalSpan],

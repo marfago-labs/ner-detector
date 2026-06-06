@@ -41,6 +41,12 @@ class BackendRunSpec:
     labels: list[str] | None = None
     threshold: float = 0.5
     datasets: list[str] | None = None
+    provider: str | None = None
+    temperature: float | None = None
+    max_chars: int | None = None
+    label_definition_preset: str | None = None
+    label_definitions: dict[str, str] | None = None
+    few_shot_examples: list[dict[str, object]] | None = None
 
 
 @dataclass(frozen=True, slots=True)

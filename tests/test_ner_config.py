@@ -60,6 +60,27 @@ def test_resolve_gliner_labels_from_preset(tmp_path: Path) -> None:
     assert "method" in resolved.labels
 
 
+def test_resolve_llm_defaults(tmp_path: Path) -> None:
+    path = tmp_path / "ner.yaml"
+    path.write_text("backend: llm\nprovider: mock\n", encoding="utf-8")
+    resolved = resolve_ner_settings(config_path=str(path))
+    assert resolved.backend == "llm"
+    assert resolved.provider == "mock"
+    assert resolved.model_id == "openai/gpt-oss-120b:free"
+    assert resolved.labels is not None
+
+
+def test_resolve_llm_label_definitions_from_preset(tmp_path: Path) -> None:
+    path = tmp_path / "ner.yaml"
+    path.write_text(
+        "backend: llm\nprovider: mock\nlabel_definition_preset: scientific\n",
+        encoding="utf-8",
+    )
+    resolved = resolve_ner_settings(config_path=str(path))
+    assert resolved.label_definitions is not None
+    assert resolved.label_definitions.get("model")
+
+
 def test_resolve_label_preset_missing_returns_none() -> None:
     assert resolve_label_preset("nonexistent_preset_xyz") is None
 

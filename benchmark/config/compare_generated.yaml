@@ -40,6 +40,7 @@ runs:
     model_id: knowledgator/gliner-bi-large-v2.0
     # Must cover both synthetic gold (person/org/loc/date/number) and arxiv_gold
     # (model/dataset/benchmark/metric/method). general_en labels yield ~0 on arxiv.
+    # Bi-encoder scores are calibrated lower than uni-encoder GLiNER; 0.5 suppresses recall.
     labels:
       - person
       - organization
@@ -52,7 +53,44 @@ runs:
       - benchmark
       - metric
       - method
-    threshold: 0.5
+    threshold: 0.3
+
+  - name: llm-mock
+    backend: llm
+    provider: mock
+    model_id: mock/ner
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    temperature: 0
+
+  - name: llm-gpt-oss
+    backend: llm
+    provider: openrouter
+    model_id: openai/gpt-oss-120b:free
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    temperature: 0
+    max_chars: 8000
 
 datasets:
   - arxiv_gold

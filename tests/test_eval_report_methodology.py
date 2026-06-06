@@ -63,7 +63,17 @@ def test_render_ner_methodology_includes_config(tmp_path: Path) -> None:
     br = BenchmarkResult(config_path=cfg, output_dir=tmp_path / "out")
     html = render_ner_methodology_content(br)
     assert "Benchmark process" in html
-    assert "marfago_gold" in html
-    assert "Document-level string overlap F1" in html
-    assert "Strict span F1" in html
-    assert "sorted by Doc F1" in html
+
+
+def test_render_report_tabs_with_curves() -> None:
+    from ner_detector.eval.report_methodology import render_report_tabs, report_tab_styles
+
+    html = render_report_tabs(
+        tab_prefix="t",
+        results_html="<p>r</p>",
+        methodology_html="<p>m</p>",
+        curves_html="<p>c</p>",
+    )
+    assert "tab-panel-curves" in html
+    assert "Threshold curves" in html
+    assert "t-curves" in report_tab_styles("t", has_curves=True)

@@ -177,7 +177,12 @@ def render_markdown_report(benchmark: BenchmarkResult) -> str:
     return "\n".join(lines)
 
 
-def write_report(benchmark: BenchmarkResult) -> tuple[Path, Path, Path]:
+def write_report(
+    benchmark: BenchmarkResult,
+    *,
+    curves: bool = True,
+    max_examples: int | None = None,
+) -> tuple[Path, Path, Path]:
     """Write ``metrics.json``, ``report.md``, and ``report.html`` under output dir."""
     out = benchmark.output_dir
     out.mkdir(parents=True, exist_ok=True)
@@ -189,7 +194,15 @@ def write_report(benchmark: BenchmarkResult) -> tuple[Path, Path, Path]:
         encoding="utf-8",
     )
     report_path.write_text(render_markdown_report(benchmark), encoding="utf-8")
+
+    curves_result = None
+    if curves:
+        from ner_detector.eval.curve_runner import run_threshold_curves, write_threshold_curves
+
+        curves_result = run_threshold_curves(benchmark, max_examples=max_examples)
+        write_threshold_curves(benchmark, curves_result)
+
     from ner_detector.eval.html_report import write_html_report
 
-    write_html_report(benchmark, html_path)
+    write_html_report(benchmark, html_path, curves=curves_result)
     return metrics_path, report_path, html_path

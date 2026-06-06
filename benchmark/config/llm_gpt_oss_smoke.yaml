@@ -1,0 +1,28 @@
+# Smoke benchmark: OpenRouter gpt-oss on 2 examples per dataset (use --max-examples 2).
+repeats: 1
+
+runs:
+  - name: llm-gpt-oss
+    backend: llm
+    provider: openrouter
+    model_id: openai/gpt-oss-120b:free
+    labels:
+      - person
+      - organization
+      - location
+      - date
+      - number
+      - product
+      - model
+      - dataset
+      - benchmark
+      - metric
+      - method
+    temperature: 0
+    max_chars: 8000
+
+datasets:
+  - arxiv_gold
+  - synthetic_news_100
+
+label_map: unified

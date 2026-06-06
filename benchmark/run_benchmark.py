@@ -64,6 +64,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run each backend×dataset N times (default: config repeats or 1). "
         "Clears model cache between repeat rounds; reports mean±std latency and score stability.",
     )
+    parser.add_argument(
+        "--no-curves",
+        action="store_true",
+        help="Skip PR/ROC threshold curves (extra inference pass at threshold 0).",
+    )
     return parser
 
 
@@ -102,10 +107,18 @@ def main(argv: list[str] | None = None) -> int:
 
     if benchmark.repeats > 1:
         print(f"Repeats per cell: {benchmark.repeats}")
-    metrics_path, report_path, html_path = write_report(benchmark)
+    metrics_path, report_path, html_path = write_report(
+        benchmark,
+        curves=not args.no_curves,
+        max_examples=args.max_examples,
+    )
     print(f"Wrote {metrics_path}")
     print(f"Wrote {report_path}")
     print(f"Wrote {html_path}")
+    if not args.no_curves:
+        curves_path = output_dir / "curves.json"
+        if curves_path.is_file():
+            print(f"Wrote {curves_path}")
     return 0
 
 

@@ -32,6 +32,8 @@ def test_default_model_id_hardcoded_fallbacks(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(config_module, "load_model_config", lambda: {})
     assert default_model_id("transformers") == "dslim/bert-base-NER"
     assert default_model_id("gliner") == "urchade/gliner_medium-v2.1"
+    assert default_model_id("nuner") == "numind/NuNER_Zero"
+    assert default_model_id("generative_ner") == "Universal-NER/UniNER-7B-type"
 
 
 def test_default_model_id_from_yaml_section(monkeypatch: pytest.MonkeyPatch) -> None:

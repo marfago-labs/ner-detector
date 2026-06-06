@@ -100,9 +100,19 @@ REPORT_TAB_CSS = """
 """
 
 
-def _methodology_tab_css(tab_prefix: str) -> str:
+def _methodology_tab_css(tab_prefix: str, *, has_curves: bool) -> str:
     results_id = f"{tab_prefix}-results"
+    curves_id = f"{tab_prefix}-curves"
     method_id = f"{tab_prefix}-methodology"
+    curves_rules = ""
+    if has_curves:
+        curves_rules = f"""
+    #{curves_id}:checked ~ .tab-bar label[for="{curves_id}"] {{
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }}
+    #{curves_id}:checked ~ .tab-panel-curves {{ display: block; }}
+"""
     return f"""
     #{results_id}:checked ~ .tab-bar label[for="{results_id}"],
     #{method_id}:checked ~ .tab-bar label[for="{method_id}"] {{
@@ -111,6 +121,7 @@ def _methodology_tab_css(tab_prefix: str) -> str:
     }}
     #{results_id}:checked ~ .tab-panel-results {{ display: block; }}
     #{method_id}:checked ~ .tab-panel-methodology {{ display: block; }}
+{curves_rules}
     """
 
 
@@ -119,39 +130,68 @@ def render_report_tabs(
     tab_prefix: str,
     results_html: str,
     methodology_html: str,
+    curves_html: str | None = None,
     results_label: str = "Results",
+    curves_label: str = "Threshold curves",
     methodology_label: str = "Metrics &amp; methodology",
 ) -> str:
-    """Two-tab layout: results (default) and metrics/methodology."""
+    """Tab layout: results (default), optional threshold curves, metrics/methodology."""
     results_id = f"{tab_prefix}-results"
+    curves_id = f"{tab_prefix}-curves"
     method_id = f"{tab_prefix}-methodology"
+    curves_input = ""
+    curves_nav_label = ""
+    curves_panel = ""
+    if curves_html is not None:
+        curves_input = (
+            f'<input type="radio" name="{tab_prefix}-tab" id="{curves_id}" class="tab-input">'
+        )
+        curves_nav_label = f"<label for=\"{curves_id}\">{curves_label}</label>"
+        curves_panel = f'<div class="tab-panel tab-panel-curves">{curves_html}</div>'
     return f"""
     <div class="report-tabs">
       <input type="radio" name="{tab_prefix}-tab" id="{results_id}" class="tab-input" checked>
+      {curves_input}
       <input type="radio" name="{tab_prefix}-tab" id="{method_id}" class="tab-input">
       <nav class="tab-bar" aria-label="Report sections">
         <label for="{results_id}">{results_label}</label>
+        {curves_nav_label}
         <label for="{method_id}">{methodology_label}</label>
       </nav>
       <div class="tab-panel tab-panel-results">{results_html}</div>
+      {curves_panel}
       <div class="tab-panel tab-panel-methodology">{methodology_html}</div>
     </div>
     """
 
 
-def report_tab_styles(tab_prefix: str) -> str:
+def report_tab_styles(tab_prefix: str, *, has_curves: bool = False) -> str:
     """CSS for tabs; append inside a <style> block after REPORT_TAB_CSS."""
-    return REPORT_TAB_CSS + _methodology_tab_css(tab_prefix)
+    return REPORT_TAB_CSS + _methodology_tab_css(tab_prefix, has_curves=has_curves)
 
 
-def _format_run_spec(name: str, backend: str, model_id: str | None, labels: list[str] | None, threshold: float) -> str:
+def _format_run_spec(
+    name: str,
+    backend: str,
+    model_id: str | None,
+    labels: list[str] | None,
+    threshold: float,
+    *,
+    provider: str | None = None,
+    temperature: float | None = None,
+) -> str:
     parts = [f"<code>{html.escape(name)}</code> — backend <code>{html.escape(backend)}</code>"]
     if model_id:
         parts.append(f"model <code>{html.escape(model_id)}</code>")
+    if provider:
+        parts.append(f"provider <code>{html.escape(provider)}</code>")
     if labels:
         label_s = ", ".join(html.escape(str(x)) for x in labels)
         parts.append(f"labels [{label_s}]")
-    parts.append(f"threshold {threshold:g}")
+    if backend in ("transformers", "gliner"):
+        parts.append(f"threshold {threshold:g}")
+    if backend == "llm" and temperature is not None:
+        parts.append(f"temperature {temperature:g}")
     return " · ".join(parts)
 
 
@@ -163,7 +203,7 @@ def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
     try:
         cfg = load_benchmark_config(benchmark.config_path)
         runs_html = "".join(
-            f'<div class="run-spec">{_format_run_spec(r.name, r.backend, r.model_id, r.labels, r.threshold)}</div>'
+            f'<div class="run-spec">{_format_run_spec(r.name, r.backend, r.model_id, r.labels, r.threshold, provider=r.provider, temperature=r.temperature)}</div>'
             for r in cfg.runs
         )
         datasets_list = ", ".join(f"<code>{html.escape(d)}</code>" for d in cfg.datasets)

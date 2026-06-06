@@ -12,12 +12,54 @@ gliner:
   default: urchade/gliner_medium-v2.1
   alternatives:
     - knowledgator/gliner-bi-base-v2.0
+    - knowledgator/gliner-bi-large-v2.0
     - knowledgator/gliner-x-large
     - urchade/gliner_multi-v2.1
     - fastino/gliner2-base-v1
 
-# Suggested label sets (GLiNER / zero-shot only)
+nuner:
+  # Token-classifier GLiNER variant — arbitrary-length spans, labels must be lower-case
+  default: numind/NuNER_Zero
+  alternatives:
+    - numind/NuNER_Zero-span
+
+generative_ner:
+  # Instruction-tuned UniversalNER (one entity type per query)
+  default: Universal-NER/UniNER-7B-type
+  alternatives:
+    - Universal-NER/UniNER-7B-definition
+    - Universal-NER/UniNER-7B-all
+
+llm:
+  default: openai/gpt-oss-120b:free
+  alternatives:
+    - nvidia/nemotron-3-super-120b-a12b:free
+    - openrouter/free
+    - meta-llama/llama-3.1-8b-instruct:free
+  providers:
+    - mock
+    - openrouter
+
+# Suggested label sets (GLiNER / NuNER / generative / LLM zero-shot when labels omitted)
 label_presets:
   general_en: [person, organization, location, date, product]
-  scientific: [person, organization, method, dataset, metric, date]
+  scientific: [person, organization, method, dataset, metric, date, model, benchmark]
   pii: [person, email, phone number, address, date]
+
+# PromptNER-style definitions for LLM backend (keyed by label_preset name)
+label_definition_presets:
+  scientific:
+    person: "A human individual mentioned by name"
+    organization: "A company, lab, or institution"
+    method: "A technique, algorithm, or training procedure"
+    dataset: "A named dataset used for training or evaluation"
+    metric: "A named evaluation metric or reported score with units"
+    date: "A calendar date or year"
+    model: "A named model, architecture, or system"
+    benchmark: "A named benchmark, challenge, or evaluation suite"
+  general_en:
+    person: "A person name"
+    organization: "A company, institution, or group"
+    location: "A geographic place"
+    date: "A calendar date or year"
+    product: "A named product or service"

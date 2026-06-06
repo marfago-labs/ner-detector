@@ -27,6 +27,7 @@ jobs:
       TRANSFORMERS_VERBOSITY: ${{ vars.TRANSFORMERS_VERBOSITY || 'error' }}
       HF_HOME: ${{ github.workspace }}/.cache/huggingface
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       NER_DATASET_DIR: ${{ github.workspace }}/ner-dataset/datasets
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +49,8 @@ jobs:
           restore-keys: |
             hf-${{ runner.os }}-
 
-      - name: Install dependencies (ML backends)
-        run: uv sync --extra dev --extra ml --extra gliner
+      - name: Install dependencies (ML + LLM backends)
+        run: uv sync --extra dev --extra ml --extra gliner --extra llm
 
       - id: paths
         shell: bash

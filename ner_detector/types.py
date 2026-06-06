@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-NerBackend = Literal["pattern", "transformers", "gliner"]
+NerBackend = Literal["pattern", "transformers", "gliner", "nuner", "generative_ner", "llm"]
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,4 +10,4 @@ from ner_detector.registry import clear_backend_cache, create_backend
 def test_unknown_backend_raises() -> None:
     clear_backend_cache()
     with pytest.raises(ValueError, match="Unknown backend"):
-        create_backend("invalid")  # type: ignore[arg-type]
+        create_backend("invalid", model_id="x/model")  # type: ignore[arg-type]

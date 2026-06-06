@@ -6,29 +6,27 @@ from contextlib import contextmanager
 from typing import Iterator
 from unittest.mock import MagicMock, patch
 
-from ner_detector.backends.transformers_backend import (
-    TransformersBackend,
-    _chunk_text,
-)
+from ner_detector.backends.chunking import chunk_text
+from ner_detector.backends.transformers_backend import TransformersBackend
 
 
 def test_chunk_text_empty() -> None:
-    assert _chunk_text("   ", max_chars=10, overlap=2) == []
+    assert chunk_text("   ", max_chars=10, overlap=2) == []
 
 
 def test_chunk_text_single_short() -> None:
-    assert _chunk_text("hello", max_chars=100, overlap=10) == ["hello"]
+    assert chunk_text("hello", max_chars=100, overlap=10) == ["hello"]
 
 
 def test_chunk_text_splits_long_text() -> None:
     text = "a" * 100
-    chunks = _chunk_text(text, max_chars=40, overlap=10)
+    chunks = chunk_text(text, max_chars=40, overlap=10)
     assert len(chunks) > 1
     assert chunks[0]
 
 
 def test_chunk_text_progresses_when_overlap_exceeds_max() -> None:
-    chunks = _chunk_text("abcdefghij", max_chars=4, overlap=10)
+    chunks = chunk_text("abcdefghij", max_chars=4, overlap=10)
     assert len(chunks) >= 2
 
 
