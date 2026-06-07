@@ -6,8 +6,25 @@ Workflows use **Node 24–native action versions** (`actions/checkout@v5`, `astr
 
 | Workflow | File | When it runs | Purpose |
 |----------|------|----------------|---------|
-| **CI** | `.github/workflows/ci.yml` | Every push/PR to `master`/`main` | `pytest` with ≥95% coverage (no ML download); checks out sibling `ner-dataset` |
+| **CI** | `.github/workflows/ci.yml` | Every push/PR to `master`/`main` | Gitleaks secret scan + `pytest` with ≥95% coverage (no ML download); checks out sibling `ner-dataset` |
 | **Benchmark → Pages** | `.github/workflows/benchmark-pages.yml` | Push to `master`, manual | Full benchmark + publish `report.html` |
+
+## Secret scanning (Gitleaks)
+
+Hardcoded API keys and tokens are blocked by **[Gitleaks](https://github.com/gitleaks/gitleaks)**:
+
+| Where | When |
+|-------|------|
+| **CI** job `secrets` | Every push/PR (OSS `gitleaks detect` CLI, full git history) |
+| **pre-commit** hook `gitleaks` | Staged files before each commit (after `pre-commit install`) |
+
+Config: [`.gitleaks.toml`](../.gitleaks.toml) (extends default rules; allowlists `tests/`, `.env.example`, docs).
+
+```bash
+gitleaks detect --source . --config .gitleaks.toml --verbose
+```
+
+Keep real keys only in local `.env` (gitignored). CI uses the free Gitleaks binary (not `gitleaks-action`, which can require a paid org license).
 
 ---
 
