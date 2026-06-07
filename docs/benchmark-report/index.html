@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NER backend benchmark — ner-detector</title>
+  <style>
+    
+    :root {
+      --bg: #f4f5f7;
+      --surface: #fff;
+      --text: #14181c;
+      --muted: #5f6b7a;
+      --border: #dde2e8;
+      --accent: #1d4ed8;
+      --rank1: #ecfdf5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    header.page {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    header.page h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
+    header.page .sub { color: var(--muted); font-size: 0.92rem; margin: 0.35rem 0 0; }
+    .notice {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+    section.block { margin-bottom: 1.5rem; }
+    section.block h2 { font-size: 1.05rem; margin: 0 0 0.65rem; font-weight: 600; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 0.88rem;
+    }
+    th, td {
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr.rank-1 { background: var(--rank1); }
+    footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    th[title] { cursor: help; border-bottom: 1px dotted var(--border); }
+    .report-tabs section.block { margin-bottom: 1.25rem; }
+    .report-tabs section.block:last-child { margin-bottom: 0; }
+    .report-tabs .notice { margin-bottom: 0.75rem; }
+    .report-index {
+      display: flex; flex-wrap: wrap; gap: 0.45rem 0.65rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+    }
+    .report-index a {
+      font-size: 0.84rem; color: var(--accent); text-decoration: none;
+      padding: 0.2rem 0.55rem; border-radius: 999px; background: #eff6ff;
+    }
+    .report-index a:hover { text-decoration: underline; }
+    .report-index .index-label {
+      width: 100%; margin: 0 0 0.15rem; font-size: 0.78rem; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .dataset-section {
+      scroll-margin-top: 1rem;
+      padding-top: 0.25rem;
+      border-top: 1px solid var(--border);
+      margin-top: 1.75rem;
+    }
+    .dataset-section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+    .dataset-section > h2 { font-size: 1.15rem; margin: 0 0 0.35rem; }
+    .dataset-section .section-sub {
+      color: var(--muted); font-size: 0.88rem; margin: 0 0 0.85rem;
+    }
+
+    .confusion-section { margin-top: 1.25rem; }
+    .confusion-section h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+    .confusion-section h4 {
+      font-size: 0.88rem; font-weight: 600; margin: 1rem 0 0.35rem;
+      color: var(--muted);
+    }
+    .confusion-note {
+      font-size: 0.82rem; color: var(--muted); margin: 0 0 0.65rem;
+    }
+    .confusion-wrap {
+      overflow-x: auto; margin-bottom: 0.75rem;
+    }
+    table.confusion-matrix {
+      width: auto; min-width: 280px; border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    table.confusion-matrix th, table.confusion-matrix td {
+      padding: 0.35rem 0.5rem; text-align: center; border: 1px solid var(--border);
+      min-width: 2.5rem;
+    }
+    table.confusion-matrix th.corner {
+      text-align: left; background: #f8fafc; font-weight: 600;
+    }
+    table.confusion-matrix th.col-head {
+      writing-mode: horizontal-tb; max-width: 6rem;
+      word-break: break-word; background: #f8fafc;
+    }
+    table.confusion-matrix th.row-head {
+      text-align: left; background: #f8fafc; font-weight: 500;
+      white-space: nowrap;
+    }
+    table.confusion-matrix td.cell-zero { color: #cbd5e1; }
+    table.confusion-matrix td.cell-hit {
+      background: #dcfce7; font-weight: 600;
+    }
+    table.confusion-matrix td.cell-off {
+      background: #fff7ed;
+    }
+    table.confusion-matrix td.cell-miss, table.confusion-matrix td.cell-spurious {
+      background: #fef2f2;
+    }
+
+    
+    .report-tabs {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0 0 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .report-tabs > input.tab-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 0.75rem;
+    }
+    .tab-bar label {
+      display: inline-block;
+      padding: 0.75rem 1rem;
+      margin-bottom: -1px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+    }
+    .tab-bar label:hover { color: var(--text); }
+    .report-tabs .tab-panel {
+      display: none;
+      padding: 1rem 1.25rem 0;
+    }
+    .method-body { font-size: 0.84rem; color: var(--muted); max-width: none; }
+    .method-lead { margin: 0 0 0.65rem; color: var(--text); }
+    .method-caveat {
+      margin: 0 0 0.65rem; padding: 0.5rem 0.65rem; background: #fffbeb;
+      border: 1px solid #fde68a; border-radius: 6px; font-size: 0.82rem;
+    }
+    .method-body h3 {
+      margin: 0.85rem 0 0.35rem; font-size: 0.78rem; font-weight: 600; color: var(--text);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .method-body dl { margin: 0; }
+    .method-body dt { font-weight: 600; color: var(--text); margin-top: 0.45rem; font-size: 0.84rem; }
+    .method-body dd { margin: 0.1rem 0 0; line-height: 1.4; }
+    .method-body p { margin: 0.35rem 0 0; line-height: 1.45; }
+    .method-body a { color: var(--accent); text-decoration: none; }
+    .method-body a:hover { text-decoration: underline; }
+    .method-body ul, .method-body ol { margin: 0.35rem 0 0; padding-left: 1.25rem; line-height: 1.45; }
+    .method-body li { margin: 0.2rem 0; }
+    .metric-block {
+      margin: 1rem 0 0;
+      padding: 0.85rem 1rem;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .metric-block h4 {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .metric-block p { margin: 0.4rem 0 0; }
+    .metric-block p strong { color: var(--text); }
+    .metric-block ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1.25rem;
+      line-height: 1.45;
+    }
+    .metric-block li { margin: 0.2rem 0; }
+    .method-refs {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+    .method-refs h3 { margin: 0 0 0.5rem; font-size: 0.78rem; }
+    .method-refs ul { margin: 0; padding-left: 1.25rem; line-height: 1.5; }
+    .run-spec {
+      margin: 0.5rem 0 0;
+      padding: 0.5rem 0.65rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+    }
+    .run-spec code { font-size: 0.8rem; }
+
+    #ner-bench-results:checked ~ .tab-bar label[for="ner-bench-results"],
+    #ner-bench-methodology:checked ~ .tab-bar label[for="ner-bench-methodology"] {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    #ner-bench-results:checked ~ .tab-panel-results { display: block; }
+    #ner-bench-methodology:checked ~ .tab-panel-methodology { display: block; }
+
+    
+    
+    .radar-section { margin-bottom: 1.5rem; }
+    .radar-note {
+      font-size: 0.84rem; color: var(--muted); margin: 0 0 0.85rem; line-height: 1.45;
+    }
+    .radar-layout {
+      display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-start;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+    .radar-figure { margin: 0; flex: 0 0 auto; }
+    .radar-chart { display: block; max-width: 100%; height: auto; }
+    .radar-grid { fill: none; stroke: var(--border); stroke-width: 1; }
+    .radar-spoke { stroke: var(--border); stroke-width: 1; }
+    .radar-axis-label {
+      font-size: 11px; fill: var(--muted); font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .radar-model { fill-opacity: 0.12; stroke-width: 2; stroke-linejoin: round; }
+    .radar-side { flex: 1 1 220px; min-width: 200px; }
+    .radar-subhead {
+      margin: 0 0 0.4rem; font-size: 0.78rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+    }
+    .radar-legend { margin: 0 0 1rem; padding-left: 1.25rem; font-size: 0.84rem; line-height: 1.55; }
+    .radar-legend li { margin: 0.2rem 0; }
+    .radar-swatch {
+      display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+      margin-right: 0.35rem; vertical-align: middle;
+    }
+    .radar-axes-list { margin: 0; padding-left: 1.15rem; font-size: 0.82rem; color: var(--muted); }
+
+    
+    .err { color: #b91c1c; font-size: 0.84rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="page">
+      <h1>NER backend benchmark</h1>
+      <p class="sub">Config <code>F:\workspace\marfago-labs\ner-detector\benchmark\config\compare_backends.yaml</code></p>
+      <p class="sub">Output <code>F:\workspace\marfago-labs\ner-detector\benchmark\results\run-20260606T131135Z</code></p>
+      
+    </header>
+
+    
+    <div class="report-tabs">
+      <input type="radio" name="ner-bench-tab" id="ner-bench-results" class="tab-input" checked>
+      
+      <input type="radio" name="ner-bench-tab" id="ner-bench-methodology" class="tab-input">
+      <nav class="tab-bar" aria-label="Report sections">
+        <label for="ner-bench-results">Results</label>
+        
+        <label for="ner-bench-methodology">Metrics &amp; methodology</label>
+      </nav>
+      <div class="tab-panel tab-panel-results">
+    
+    
+    
+    <nav class="report-index" aria-label="Report sections">
+      <p class="index-label">Sections</p>
+      <a href="#global">Global (all datasets)</a><a href="#dataset-arxiv-gold">arxiv_gold</a><a href="#dataset-synthetic-news-100">synthetic_news_100</a>
+    </nav>
+    
+    
+    <section class="dataset-section" id="global">
+      <h2>Global — all datasets</h2>
+      <p class="section-sub">Aggregated Document/Strict F1 and latency across
+      <strong>760</strong> gold examples (2 datasets).</p>
+      <section class="block">
+        <h3>Leaderboard</h3>
+        <p class="notice">Ranked by Document-level string overlap F1. Green row = best overall.</p>
+        
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Run</th>
+            
+            <th>Backend</th>
+            <th>Model</th>
+            <th title="Document-level unique string match">Doc F1</th>
+            <th title="Exact span + unified label match">Strict F1</th>
+            <th title="Wall-clock ms per example (inference; load time reported separately in metrics.json)">Latency</th>
+          </tr>
+        </thead>
+        <tbody><tr class='rank-1'><td>1</td><td><code>llm-gpt-oss</code></td><td>llm</td><td><code>openai/gpt-oss-120b:free</code></td><td>80.7%</td><td>80.6%</td><td>7100.93 ms</td></tr><tr class=''><td>2</td><td><code>nuner-zero</code></td><td>nuner</td><td><code>numind/NuNER_Zero</code></td><td>74.3%</td><td>72.4%</td><td>1768.16 ms</td></tr><tr class=''><td>3</td><td><code>bert-conll</code></td><td>transformers</td><td><code>dslim/bert-base-NER</code></td><td>72.5%</td><td>72.5%</td><td>79.60 ms</td></tr><tr class=''><td>4</td><td><code>gliner-medium</code></td><td>gliner</td><td><code>urchade/gliner_medium-v2.1</code></td><td>67.3%</td><td>65.9%</td><td>212.40 ms</td></tr><tr class=''><td>5</td><td><code>gliner-bi-large</code></td><td>gliner</td><td><code>knowledgator/gliner-bi-large-v2.0</code></td><td>57.1%</td><td>55.2%</td><td>391.60 ms</td></tr><tr class=''><td>6</td><td><code>llm-mock</code></td><td>llm</td><td><code>mock/ner</code></td><td>31.0%</td><td>31.0%</td><td>0.21 ms</td></tr><tr class=''><td>7</td><td><code>pattern</code></td><td>pattern</td><td><code>—</code></td><td>22.7%</td><td>21.8%</td><td>0.19 ms</td></tr></tbody>
+      </table>
+    
+      </section>
+      
+    <section class="block radar-section">
+      <h2>Backend radar — Global (all datasets)</h2>
+      <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
+      Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
+      Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
+      not a ranking metric.</p>
+      
+      <div class="radar-layout">
+        <figure class="radar-figure">
+          <svg class="radar-chart" viewBox="0 0 420 420" width="420" height="420" role="img"
+               aria-label="Radar chart for Global (all datasets)">
+            <polygon points="210.00,172.50 242.48,228.75 177.52,228.75" class="radar-grid" /><polygon points="210.00,135.00 274.95,247.50 145.05,247.50" class="radar-grid" /><polygon points="210.00,97.50 307.43,266.25 112.57,266.25" class="radar-grid" /><polygon points="210.00,60.00 339.90,285.00 80.10,285.00" class="radar-grid" />
+            <line x1="210.00" y1="210.00" x2="210.00" y2="60.00" class="radar-spoke" /><line x1="210.00" y1="210.00" x2="339.90" y2="285.00" class="radar-spoke" /><line x1="210.00" y1="210.00" x2="80.10" y2="285.00" class="radar-spoke" />
+            <polygon points="210.00,101.29 304.15,264.35 90.44,279.03" class="radar-model" fill="#c2410c" stroke="#c2410c" /><polygon points="210.00,109.10 295.58,259.41 107.69,269.07" class="radar-model" fill="#047857" stroke="#047857" /><polygon points="210.00,124.34 281.68,251.39 130.97,255.63" class="radar-model" fill="#7c3aed" stroke="#7c3aed" /><polygon points="210.00,163.55 250.23,233.22 80.12,284.98" class="radar-model" fill="#0e7490" stroke="#0e7490" /><polygon points="210.00,88.93 314.64,270.41 210.00,210.00" class="radar-model" fill="#be123c" stroke="#be123c" /><polygon points="210.00,98.52 304.04,264.29 210.00,210.00" class="radar-model" fill="#b45309" stroke="#b45309" /><polygon points="210.00,176.01 238.36,226.38 80.12,284.99" class="radar-model" fill="#1d4ed8" stroke="#1d4ed8" />
+            <text x="210.00" y="32.00" text-anchor="middle" dominant-baseline="middle" class="radar-axis-label">Doc F1</text><text x="364.15" y="299.00" text-anchor="start" dominant-baseline="middle" class="radar-axis-label">Strict F1</text><text x="55.85" y="299.00" text-anchor="end" dominant-baseline="middle" class="radar-axis-label">Speed</text>
+          </svg>
+        </figure>
+        <div class="radar-side">
+          <h3 class="radar-subhead">Legend (by area)</h3>
+          <ol class="radar-legend"><li><span class="radar-swatch" style="background:#c2410c"></span><code>bert-conll</code> — area <strong>0.805</strong></li><li><span class="radar-swatch" style="background:#047857"></span><code>gliner-medium</code> — area <strong>0.646</strong></li><li><span class="radar-swatch" style="background:#7c3aed"></span><code>gliner-bi-large</code> — area <strong>0.432</strong></li><li><span class="radar-swatch" style="background:#0e7490"></span><code>llm-mock</code> — area <strong>0.310</strong></li><li><span class="radar-swatch" style="background:#be123c"></span><code>llm-gpt-oss</code> — area <strong>0.282</strong></li><li><span class="radar-swatch" style="background:#b45309"></span><code>nuner-zero</code> — area <strong>0.233</strong></li><li><span class="radar-swatch" style="background:#1d4ed8"></span><code>pattern</code> — area <strong>0.214</strong></li></ol>
+          <h3 class="radar-subhead">Axes</h3>
+          <ul class="radar-axes-list"><li>Doc F1</li><li>Strict F1</li><li>Speed</li></ul>
+        </div>
+      </div>
+    </section>
+    
+      
+    <section class="block confusion-section">
+      <h3>Label confusion matrices</h3>
+      <p class="confusion-note">Rows = gold labels; columns = predicted labels.
+      Diagonal (green) = correct label at a paired span. Column <code>∅ missed</code>
+      = gold entity with no paired prediction. Row <code>∅ spurious</code>
+      = prediction with no paired gold span.</p>
+      
+    <div class="confusion-run">
+      <h4><code>llm-gpt-oss</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 723</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.086);">2</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-zero">·</td><td class="cell-hit">9</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.091);">4</td><td class="cell-zero">·</td><td class="cell-hit">29</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">22</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">127</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">122</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">2</td><td class="cell-spurious">1</td><td class="cell-spurious">27</td><td class="cell-spurious">25</td><td class="cell-spurious">8</td><td class="cell-spurious">9</td><td class="cell-spurious">6</td><td class="cell-spurious">63</td><td class="cell-spurious">37</td><td class="cell-zero">·</td><td class="cell-spurious">4</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 732</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.086);">2</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-zero">·</td><td class="cell-hit">8</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.086);">2</td><td class="cell-zero">·</td><td class="cell-hit">28</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">25</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">126</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">121</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">4</td><td class="cell-spurious">1</td><td class="cell-spurious">27</td><td class="cell-spurious">25</td><td class="cell-spurious">9</td><td class="cell-spurious">11</td><td class="cell-spurious">7</td><td class="cell-spurious">64</td><td class="cell-spurious">38</td><td class="cell-spurious">1</td><td class="cell-spurious">4</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>bert-conll</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 565</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">location</th><th class="col-head" scope="col">miscellaneous</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">127</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">122</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">26</td><td class="cell-spurious">15</td><td class="cell-spurious">21</td><td class="cell-spurious">3</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 593</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">location</th><th class="col-head" scope="col">miscellaneous</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">109</td><td class="cell-zero">·</td><td class="cell-miss">18</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">112</td><td class="cell-miss">10</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">26</td><td class="cell-spurious">15</td><td class="cell-spurious">39</td><td class="cell-spurious">13</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>nuner-zero</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 774</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.086);">2</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">82</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">9</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">5</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">126</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">122</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">7</td><td class="cell-spurious">17</td><td class="cell-spurious">36</td><td class="cell-spurious">37</td><td class="cell-spurious">5</td><td class="cell-spurious">34</td><td class="cell-spurious">28</td><td class="cell-spurious">5</td><td class="cell-spurious">63</td><td class="cell-zero">·</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 792</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.086);">2</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">82</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">51</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">114</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">14</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">121</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">7</td><td class="cell-spurious">18</td><td class="cell-spurious">36</td><td class="cell-spurious">37</td><td class="cell-spurious">6</td><td class="cell-spurious">34</td><td class="cell-spurious">30</td><td class="cell-spurious">6</td><td class="cell-spurious">75</td><td class="cell-spurious">1</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>gliner-medium</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 885</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.085);">2</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">53</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">127</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">118</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">10</td><td class="cell-spurious">18</td><td class="cell-spurious">35</td><td class="cell-spurious">39</td><td class="cell-spurious">3</td><td class="cell-spurious">39</td><td class="cell-spurious">23</td><td class="cell-spurious">17</td><td class="cell-spurious">142</td><td class="cell-spurious">13</td><td class="cell-spurious">5</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 904</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.084);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">54</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">112</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">16</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">117</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">10</td><td class="cell-spurious">19</td><td class="cell-spurious">35</td><td class="cell-spurious">39</td><td class="cell-spurious">4</td><td class="cell-spurious">39</td><td class="cell-spurious">23</td><td class="cell-spurious">18</td><td class="cell-spurious">157</td><td class="cell-spurious">14</td><td class="cell-spurious">5</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>gliner-bi-large</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 612</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">7</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.090);">3</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">55</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">30</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">23</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">93</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.087);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">9</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">55</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">42</td><td class="cell-zero">·</td><td class="cell-miss">86</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-hit">103</td><td class="cell-miss">18</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">5</td><td class="cell-spurious">10</td><td class="cell-spurious">1</td><td class="cell-spurious">6</td><td class="cell-spurious">2</td><td class="cell-spurious">9</td><td class="cell-spurious">20</td><td class="cell-spurious">18</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 617</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">7</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.090);">3</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">55</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">30</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">23</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">93</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">55</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">42</td><td class="cell-zero">·</td><td class="cell-miss">86</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-hit">103</td><td class="cell-miss">18</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">5</td><td class="cell-spurious">11</td><td class="cell-spurious">1</td><td class="cell-spurious">6</td><td class="cell-spurious">3</td><td class="cell-spurious">9</td><td class="cell-spurious">23</td><td class="cell-spurious">18</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>llm-mock</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 702</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">9</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">8</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.189);">41</td><td class="cell-zero">·</td><td class="cell-miss">44</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.165);">32</td><td class="cell-miss">84</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-miss">10</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-hit">53</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.252);">65</td><td class="cell-miss">63</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-hit">120</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">132</td><td class="cell-spurious">29</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 739</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">9</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">8</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.166);">37</td><td class="cell-zero">·</td><td class="cell-miss">48</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.147);">29</td><td class="cell-miss">87</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">11</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-hit">38</td><td class="cell-zero">·</td><td class="cell-miss">17</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.201);">52</td><td class="cell-miss">76</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-hit">119</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">151</td><td class="cell-spurious">47</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>pattern</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 1007</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">acronym</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">year</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.085);">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.082);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.116);">32</td><td class="cell-zero">·</td><td class="cell-miss">84</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">3</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.081);">1</td><td class="cell-zero">·</td><td class="cell-miss">7</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-hit">52</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.117);">33</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.154);">65</td><td class="cell-zero">·</td><td class="cell-miss">30</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">120</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">32</td><td class="cell-spurious">308</td><td class="cell-spurious">29</td><td class="cell-spurious">97</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 1056</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">acronym</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">year</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">8</td></tr><tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.110);">29</td><td class="cell-zero">·</td><td class="cell-miss">87</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.082);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">9</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-hit">25</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">30</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.114);">33</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.134);">52</td><td class="cell-zero">·</td><td class="cell-miss">43</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">119</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">36</td><td class="cell-spurious">335</td><td class="cell-spurious">47</td><td class="cell-spurious">97</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    </section>
+    
+    </section>
+    
+    <section class="dataset-section" id="dataset-arxiv-gold">
+      <h2>arxiv_gold</h2>
+      <p class="section-sub"><strong>10</strong> examples,
+      <strong>41</strong> gold spans in this dataset.</p>
+      <section class="block">
+        <h3>Leaderboard</h3>
+        <p class="notice">Ranked by Document-level string overlap F1 on this dataset only. Green row = best for this corpus.</p>
+        
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Run</th>
+            
+            <th>Backend</th>
+            <th>Model</th>
+            <th title="Document-level unique string match">Doc F1</th>
+            <th title="Exact span + unified label match">Strict F1</th>
+            <th title="Wall-clock ms per example (inference; load time reported separately in metrics.json)">Latency</th>
+          </tr>
+        </thead>
+        <tbody><tr class='rank-1'><td>1</td><td><code>llm-gpt-oss</code></td><td>llm</td><td><code>openai/gpt-oss-120b:free</code></td><td>47.2%</td><td>45.3%</td><td>9052.61 ms</td></tr><tr class=''><td>2</td><td><code>gliner-bi-large</code></td><td>gliner</td><td><code>knowledgator/gliner-bi-large-v2.0</code></td><td>39.1%</td><td>27.5%</td><td>664.38 ms</td></tr><tr class=''><td>3</td><td><code>gliner-medium</code></td><td>gliner</td><td><code>urchade/gliner_medium-v2.1</code></td><td>36.2%</td><td>27.1%</td><td>364.31 ms</td></tr><tr class=''><td>4</td><td><code>nuner-zero</code></td><td>nuner</td><td><code>numind/NuNER_Zero</code></td><td>32.7%</td><td>22.6%</td><td>840.31 ms</td></tr><tr class=''><td>5</td><td><code>llm-mock</code></td><td>llm</td><td><code>mock/ner</code></td><td>2.9%</td><td>2.9%</td><td>0.21 ms</td></tr><tr class=''><td>6</td><td><code>pattern</code></td><td>pattern</td><td><code>—</code></td><td>2.2%</td><td>1.7%</td><td>0.72 ms</td></tr></tbody>
+      </table>
+    
+      </section>
+      
+    <section class="block radar-section">
+      <h2>Backend radar — arxiv_gold</h2>
+      <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
+      Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
+      Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
+      not a ranking metric.</p>
+      
+      <div class="radar-layout">
+        <figure class="radar-figure">
+          <svg class="radar-chart" viewBox="0 0 420 420" width="420" height="420" role="img"
+               aria-label="Radar chart for arxiv_gold">
+            <polygon points="210.00,172.50 242.48,228.75 177.52,228.75" class="radar-grid" /><polygon points="210.00,135.00 274.95,247.50 145.05,247.50" class="radar-grid" /><polygon points="210.00,97.50 307.43,266.25 112.57,266.25" class="radar-grid" /><polygon points="210.00,60.00 339.90,285.00 80.10,285.00" class="radar-grid" />
+            <line x1="210.00" y1="210.00" x2="210.00" y2="60.00" class="radar-spoke" /><line x1="210.00" y1="210.00" x2="339.90" y2="285.00" class="radar-spoke" /><line x1="210.00" y1="210.00" x2="80.10" y2="285.00" class="radar-spoke" />
+            <polygon points="210.00,155.74 245.23,230.34 127.42,257.68" class="radar-model" fill="#047857" stroke="#047857" /><polygon points="210.00,151.38 245.75,230.64 166.40,235.17" class="radar-model" fill="#7c3aed" stroke="#7c3aed" /><polygon points="210.00,139.25 268.82,243.96 210.00,210.00" class="radar-model" fill="#be123c" stroke="#be123c" /><polygon points="210.00,161.02 239.33,226.94 189.26,221.98" class="radar-model" fill="#b45309" stroke="#b45309" /><polygon points="210.00,205.71 213.71,212.14 80.12,284.98" class="radar-model" fill="#0e7490" stroke="#0e7490" /><polygon points="210.00,206.67 212.17,211.25 80.19,284.95" class="radar-model" fill="#1d4ed8" stroke="#1d4ed8" />
+            <text x="210.00" y="32.00" text-anchor="middle" dominant-baseline="middle" class="radar-axis-label">Doc F1</text><text x="364.15" y="299.00" text-anchor="start" dominant-baseline="middle" class="radar-axis-label">Strict F1</text><text x="55.85" y="299.00" text-anchor="end" dominant-baseline="middle" class="radar-axis-label">Speed</text>
+          </svg>
+        </figure>
+        <div class="radar-side">
+          <h3 class="radar-subhead">Legend (by area)</h3>
+          <ol class="radar-legend"><li><span class="radar-swatch" style="background:#047857"></span><code>gliner-medium</code> — area <strong>0.217</strong></li><li><span class="radar-swatch" style="background:#7c3aed"></span><code>gliner-bi-large</code> — area <strong>0.143</strong></li><li><span class="radar-swatch" style="background:#be123c"></span><code>llm-gpt-oss</code> — area <strong>0.092</strong></li><li><span class="radar-swatch" style="background:#b45309"></span><code>nuner-zero</code> — area <strong>0.070</strong></li><li><span class="radar-swatch" style="background:#0e7490"></span><code>llm-mock</code> — area <strong>0.025</strong></li><li><span class="radar-swatch" style="background:#1d4ed8"></span><code>pattern</code> — area <strong>0.017</strong></li></ol>
+          <h3 class="radar-subhead">Axes</h3>
+          <ul class="radar-axes-list"><li>Doc F1</li><li>Strict F1</li><li>Speed</li></ul>
+        </div>
+      </div>
+    </section>
+    
+      
+    <section class="block confusion-section">
+      <h3>Label confusion matrices</h3>
+      <p class="confusion-note">Rows = gold labels; columns = predicted labels.
+      Diagonal (green) = correct label at a paired span. Column <code>∅ missed</code>
+      = gold entity with no paired prediction. Row <code>∅ spurious</code>
+      = prediction with no paired gold span.</p>
+      
+    <div class="confusion-run">
+      <h4><code>llm-gpt-oss</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 72</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.158);">2</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.119);">1</td><td class="cell-zero">·</td><td class="cell-hit">9</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.158);">2</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">2</td><td class="cell-spurious">1</td><td class="cell-spurious">7</td><td class="cell-spurious">6</td><td class="cell-spurious">5</td><td class="cell-spurious">9</td><td class="cell-zero">·</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 77</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.150);">2</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.115);">1</td><td class="cell-zero">·</td><td class="cell-hit">8</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.150);">2</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">4</td><td class="cell-spurious">1</td><td class="cell-spurious">8</td><td class="cell-spurious">6</td><td class="cell-spurious">6</td><td class="cell-spurious">10</td><td class="cell-zero">·</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>gliner-bi-large</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 85</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">7</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.133);">3</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.115);">2</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">9</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">5</td><td class="cell-spurious">10</td><td class="cell-spurious">2</td><td class="cell-spurious">7</td><td class="cell-spurious">20</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 90</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">7</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.126);">3</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.095);">1</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">5</td><td class="cell-spurious">11</td><td class="cell-spurious">3</td><td class="cell-spurious">7</td><td class="cell-spurious">23</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>gliner-medium</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 97</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.112);">2</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">9</td><td class="cell-spurious">10</td><td class="cell-spurious">3</td><td class="cell-spurious">9</td><td class="cell-spurious">22</td><td class="cell-spurious">1</td><td class="cell-spurious">1</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 100</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">7</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.112);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">6</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">9</td><td class="cell-spurious">11</td><td class="cell-spurious">4</td><td class="cell-spurious">9</td><td class="cell-spurious">22</td><td class="cell-spurious">2</td><td class="cell-spurious">1</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>nuner-zero</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 103</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.092);">1</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.105);">2</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">9</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">7</td><td class="cell-spurious">17</td><td class="cell-spurious">5</td><td class="cell-spurious">5</td><td class="cell-spurious">28</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 107</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.092);">1</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.103);">2</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">7</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">7</td><td class="cell-spurious">18</td><td class="cell-spurious">6</td><td class="cell-spurious">5</td><td class="cell-spurious">30</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>llm-mock</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 66</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">9</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">8</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.095);">1</td><td class="cell-miss">10</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">24</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 69</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">9</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">8</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">11</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">26</td><td class="cell-spurious">2</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>pattern</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 107</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">acronym</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">year</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.120);">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.100);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.110);">3</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.090);">1</td><td class="cell-zero">·</td><td class="cell-miss">7</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-hit">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">26</td><td class="cell-spurious">35</td><td class="cell-spurious">1</td><td class="cell-spurious">4</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 114</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">acronym</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">year</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">benchmark</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.108);">3</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">dataset</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">8</td></tr><tr><th class="row-head" scope="row">method</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">6</td></tr><tr><th class="row-head" scope="row">metric</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">model</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.099);">2</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">9</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-hit">1</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">30</td><td class="cell-spurious">37</td><td class="cell-spurious">2</td><td class="cell-spurious">4</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    </section>
+    
+    </section>
+    
+    <section class="dataset-section" id="dataset-synthetic-news-100">
+      <h2>synthetic_news_100</h2>
+      <p class="section-sub"><strong>100</strong> examples,
+      <strong>500</strong> gold spans in this dataset.</p>
+      <section class="block">
+        <h3>Leaderboard</h3>
+        <p class="notice">Ranked by Document-level string overlap F1 on this dataset only. Green row = best for this corpus.</p>
+        
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Run</th>
+            
+            <th>Backend</th>
+            <th>Model</th>
+            <th title="Document-level unique string match">Doc F1</th>
+            <th title="Exact span + unified label match">Strict F1</th>
+            <th title="Wall-clock ms per example (inference; load time reported separately in metrics.json)">Latency</th>
+          </tr>
+        </thead>
+        <tbody><tr class='rank-1'><td>1</td><td><code>llm-gpt-oss</code></td><td>llm</td><td><code>openai/gpt-oss-120b:free</code></td><td>83.9%</td><td>83.9%</td><td>6905.76 ms</td></tr><tr class=''><td>2</td><td><code>nuner-zero</code></td><td>nuner</td><td><code>numind/NuNER_Zero</code></td><td>78.0%</td><td>77.9%</td><td>1860.95 ms</td></tr><tr class=''><td>3</td><td><code>bert-conll</code></td><td>transformers</td><td><code>dslim/bert-base-NER</code></td><td>72.5%</td><td>72.5%</td><td>79.60 ms</td></tr><tr class=''><td>4</td><td><code>gliner-medium</code></td><td>gliner</td><td><code>urchade/gliner_medium-v2.1</code></td><td>69.6%</td><td>69.6%</td><td>197.21 ms</td></tr><tr class=''><td>5</td><td><code>gliner-bi-large</code></td><td>gliner</td><td><code>knowledgator/gliner-bi-large-v2.0</code></td><td>59.2%</td><td>59.2%</td><td>364.32 ms</td></tr><tr class=''><td>6</td><td><code>llm-mock</code></td><td>llm</td><td><code>mock/ner</code></td><td>33.1%</td><td>33.1%</td><td>0.21 ms</td></tr><tr class=''><td>7</td><td><code>pattern</code></td><td>pattern</td><td><code>—</code></td><td>24.2%</td><td>23.9%</td><td>0.14 ms</td></tr></tbody>
+      </table>
+    
+      </section>
+      
+    <section class="block radar-section">
+      <h2>Backend radar — synthetic_news_100</h2>
+      <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
+      Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
+      Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
+      not a ranking metric.</p>
+      
+      <div class="radar-layout">
+        <figure class="radar-figure">
+          <svg class="radar-chart" viewBox="0 0 420 420" width="420" height="420" role="img"
+               aria-label="Radar chart for synthetic_news_100">
+            <polygon points="210.00,172.50 242.48,228.75 177.52,228.75" class="radar-grid" /><polygon points="210.00,135.00 274.95,247.50 145.05,247.50" class="radar-grid" /><polygon points="210.00,97.50 307.43,266.25 112.57,266.25" class="radar-grid" /><polygon points="210.00,60.00 339.90,285.00 80.10,285.00" class="radar-grid" />
+            <line x1="210.00" y1="210.00" x2="210.00" y2="60.00" class="radar-spoke" /><line x1="210.00" y1="210.00" x2="339.90" y2="285.00" class="radar-spoke" /><line x1="210.00" y1="210.00" x2="80.10" y2="285.00" class="radar-spoke" />
+            <polygon points="210.00,101.29 304.15,264.35 90.44,279.03" class="radar-model" fill="#c2410c" stroke="#c2410c" /><polygon points="210.00,105.54 300.40,262.19 105.71,270.21" class="radar-model" fill="#047857" stroke="#047857" /><polygon points="210.00,121.20 286.90,254.40 127.42,257.68" class="radar-model" fill="#7c3aed" stroke="#7c3aed" /><polygon points="210.00,160.42 252.93,234.79 80.12,284.98" class="radar-model" fill="#0e7490" stroke="#0e7490" /><polygon points="210.00,84.20 318.94,272.90 210.00,210.00" class="radar-model" fill="#be123c" stroke="#be123c" /><polygon points="210.00,93.05 311.19,268.42 210.00,210.00" class="radar-model" fill="#b45309" stroke="#b45309" /><polygon points="210.00,173.67 240.99,227.89 80.11,284.99" class="radar-model" fill="#1d4ed8" stroke="#1d4ed8" />
+            <text x="210.00" y="32.00" text-anchor="middle" dominant-baseline="middle" class="radar-axis-label">Doc F1</text><text x="364.15" y="299.00" text-anchor="start" dominant-baseline="middle" class="radar-axis-label">Strict F1</text><text x="55.85" y="299.00" text-anchor="end" dominant-baseline="middle" class="radar-axis-label">Speed</text>
+          </svg>
+        </figure>
+        <div class="radar-side">
+          <h3 class="radar-subhead">Legend (by area)</h3>
+          <ol class="radar-legend"><li><span class="radar-swatch" style="background:#c2410c"></span><code>bert-conll</code> — area <strong>0.805</strong></li><li><span class="radar-swatch" style="background:#047857"></span><code>gliner-medium</code> — area <strong>0.694</strong></li><li><span class="radar-swatch" style="background:#7c3aed"></span><code>gliner-bi-large</code> — area <strong>0.478</strong></li><li><span class="radar-swatch" style="background:#0e7490"></span><code>llm-mock</code> — area <strong>0.333</strong></li><li><span class="radar-swatch" style="background:#be123c"></span><code>llm-gpt-oss</code> — area <strong>0.305</strong></li><li><span class="radar-swatch" style="background:#b45309"></span><code>nuner-zero</code> — area <strong>0.263</strong></li><li><span class="radar-swatch" style="background:#1d4ed8"></span><code>pattern</code> — area <strong>0.233</strong></li></ol>
+          <h3 class="radar-subhead">Axes</h3>
+          <ul class="radar-axes-list"><li>Doc F1</li><li>Strict F1</li><li>Speed</li></ul>
+        </div>
+      </div>
+    </section>
+    
+      
+    <section class="block confusion-section">
+      <h3>Label confusion matrices</h3>
+      <p class="confusion-note">Rows = gold labels; columns = predicted labels.
+      Diagonal (green) = correct label at a paired span. Column <code>∅ missed</code>
+      = gold entity with no paired prediction. Row <code>∅ spurious</code>
+      = prediction with no paired gold span.</p>
+      
+    <div class="confusion-run">
+      <h4><code>llm-gpt-oss</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 651</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.086);">2</td><td class="cell-zero">·</td><td class="cell-hit">26</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">22</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">126</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">122</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">27</td><td class="cell-spurious">25</td><td class="cell-spurious">1</td><td class="cell-spurious">3</td><td class="cell-spurious">1</td><td class="cell-spurious">54</td><td class="cell-spurious">37</td><td class="cell-zero">·</td><td class="cell-spurious">3</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 655</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">method</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">26</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">24</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">125</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">121</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">27</td><td class="cell-spurious">25</td><td class="cell-spurious">1</td><td class="cell-spurious">5</td><td class="cell-spurious">1</td><td class="cell-spurious">54</td><td class="cell-spurious">38</td><td class="cell-spurious">1</td><td class="cell-spurious">3</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>nuner-zero</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 671</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-hit">82</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">5</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">45</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">126</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">122</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">36</td><td class="cell-spurious">37</td><td class="cell-spurious">29</td><td class="cell-spurious">5</td><td class="cell-spurious">63</td><td class="cell-zero">·</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 685</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-hit">82</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">4</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">46</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">114</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">13</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">121</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">36</td><td class="cell-spurious">37</td><td class="cell-spurious">29</td><td class="cell-spurious">6</td><td class="cell-spurious">75</td><td class="cell-spurious">1</td><td class="cell-spurious">1</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>bert-conll</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 565</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">location</th><th class="col-head" scope="col">miscellaneous</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">127</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">122</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">26</td><td class="cell-spurious">15</td><td class="cell-spurious">21</td><td class="cell-spurious">3</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 593</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">location</th><th class="col-head" scope="col">miscellaneous</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">109</td><td class="cell-zero">·</td><td class="cell-miss">18</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">112</td><td class="cell-miss">10</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">26</td><td class="cell-spurious">15</td><td class="cell-spurious">39</td><td class="cell-spurious">13</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>gliner-medium</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 788</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">126</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">118</td><td class="cell-zero">·</td><td class="cell-miss">4</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">1</td><td class="cell-spurious">8</td><td class="cell-spurious">35</td><td class="cell-spurious">39</td><td class="cell-spurious">30</td><td class="cell-spurious">1</td><td class="cell-spurious">16</td><td class="cell-spurious">141</td><td class="cell-spurious">13</td><td class="cell-spurious">4</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 804</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">benchmark</th><th class="col-head" scope="col">dataset</th><th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">model</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">product</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">85</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">116</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">111</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">16</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">117</td><td class="cell-zero">·</td><td class="cell-miss">5</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">1</td><td class="cell-spurious">8</td><td class="cell-spurious">35</td><td class="cell-spurious">39</td><td class="cell-spurious">30</td><td class="cell-spurious">1</td><td class="cell-spurious">16</td><td class="cell-spurious">156</td><td class="cell-spurious">14</td><td class="cell-spurious">4</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>gliner-bi-large</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 527</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-hit">55</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">30</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-hit">23</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">93</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">41</td><td class="cell-zero">·</td><td class="cell-miss">86</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-hit">103</td><td class="cell-miss">18</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">1</td><td class="cell-spurious">6</td><td class="cell-spurious">2</td><td class="cell-spurious">18</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 527</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">date</th><th class="col-head" scope="col">location</th><th class="col-head" scope="col">metric</th><th class="col-head" scope="col">organization</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-hit">55</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">30</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-hit">23</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">93</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">50</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">41</td><td class="cell-zero">·</td><td class="cell-miss">86</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.083);">1</td><td class="cell-hit">103</td><td class="cell-miss">18</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">1</td><td class="cell-spurious">6</td><td class="cell-spurious">2</td><td class="cell-spurious">18</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>llm-mock</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 636</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.200);">41</td><td class="cell-zero">·</td><td class="cell-miss">44</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.173);">32</td><td class="cell-miss">84</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-hit">50</td><td class="cell-zero">·</td><td class="cell-zero">·</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.270);">65</td><td class="cell-miss">62</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-hit">120</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">108</td><td class="cell-spurious">28</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 670</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.184);">37</td><td class="cell-zero">·</td><td class="cell-miss">48</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.161);">29</td><td class="cell-miss">87</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-hit">37</td><td class="cell-zero">·</td><td class="cell-miss">13</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.226);">52</td><td class="cell-miss">75</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-hit">119</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">125</td><td class="cell-spurious">45</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    <div class="confusion-run">
+      <h4><code>pattern</code></h4>
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 900</p>
+      <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">acronym</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">year</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.121);">32</td><td class="cell-zero">·</td><td class="cell-miss">84</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-hit">49</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">1</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.122);">33</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.163);">65</td><td class="cell-zero">·</td><td class="cell-miss">29</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">120</td><td class="cell-zero">·</td><td class="cell-miss">2</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">6</td><td class="cell-spurious">273</td><td class="cell-spurious">28</td><td class="cell-spurious">93</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+      
+    <div class="confusion-wrap">
+      <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 942</p>
+      <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
+        <thead>
+          <tr>
+            <th class="corner" scope="col">Gold ↓ / Pred →</th>
+            <th class="col-head" scope="col">acronym</th><th class="col-head" scope="col">number</th><th class="col-head" scope="col">person</th><th class="col-head" scope="col">year</th><th class="col-head" scope="col">∅ missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th class="row-head" scope="row">date</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">85</td></tr><tr><th class="row-head" scope="row">location</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.114);">29</td><td class="cell-zero">·</td><td class="cell-miss">87</td></tr><tr><th class="row-head" scope="row">number</th><td class="cell-zero">·</td><td class="cell-hit">24</td><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-miss">26</td></tr><tr><th class="row-head" scope="row">organization</th><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.119);">33</td><td class="cell-zero">·</td><td class="cell-off" style="background-color: rgba(29, 78, 216, 0.141);">52</td><td class="cell-zero">·</td><td class="cell-miss">42</td></tr><tr><th class="row-head" scope="row">person</th><td class="cell-zero">·</td><td class="cell-zero">·</td><td class="cell-hit">119</td><td class="cell-zero">·</td><td class="cell-miss">3</td></tr><tr><th class="row-head" scope="row">∅ spurious</th><td class="cell-spurious">6</td><td class="cell-spurious">298</td><td class="cell-spurious">45</td><td class="cell-spurious">93</td><td class="cell-zero">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+    
+    </div>
+    
+    </section>
+    
+    </section>
+    
+    
+    </div>
+      
+      <div class="tab-panel tab-panel-methodology">
+        <div class="method-body">
+          <p class="method-lead">Each gold example is loaded from JSONL, passed through a NER backend
+          (<code>detect_entities</code>), and scored against annotated spans after label normalization.
+          This report compares <strong>backend implementations</strong> on fixed gold data — not end-to-end
+          application quality or downstream retrieval.</p>
+          
+
+          <h3>This run</h3>
+          <dl>
+            <dt>Config</dt>
+            <dd><code>F:\workspace\marfago-labs\ner-detector\benchmark\config\compare_backends.yaml</code></dd>
+            <dt>Output</dt>
+            <dd><code>F:\workspace\marfago-labs\ner-detector\benchmark\results\run-20260606T131135Z</code></dd>
+            <dt>Repeats per cell</dt>
+            <dd>1</dd>
+            <dt>Completed cells</dt>
+            <dd>13 successful backend×dataset runs of 13 attempted.</dd>
+            <dt>Label map</dt>
+            <dd><code>unified</code> (see <code>benchmark/config/label_maps.yaml</code>)</dd>
+            <dt>Datasets in config</dt>
+            <dd><code>arxiv_gold</code>, <code>synthetic_news_100</code></dd>
+          </dl>
+
+          
+          <h3>Benchmark process</h3>
+          <ol>
+            <li>Read <code>benchmark/config/compare_backends.yaml</code> for run definitions and dataset names.</li>
+            <li>Load each dataset from the configured <code>benchmark_root</code> (default: sibling
+            <code>../ner-dataset/datasets/&lt;name&gt;.jsonl</code>) or <code>NER_DATASET_DIR</code>.</li>
+            <li>For each (run, dataset) pair: repeat <code>1</code> time(s) — clear backend cache, run all examples,
+            score spans, record wall-clock latency (model load + inference each trial).</li>
+            <li>Aggregate trials: mean ± std latency; verify score reproducibility across repeats.</li>
+            <li>Write <code>metrics.json</code>, <code>report.md</code>, and this <code>report.html</code>.</li>
+          </ol>
+          <p>CLI: <code>uv run python benchmark/run_benchmark.py</code> —
+          flags <code>--pattern-only</code>, <code>--datasets</code>, <code>--runs</code>,
+          <code>--max-examples</code>, <code>--output</code>.</p>
+
+          <h3>Configured backends</h3>
+          <div class="run-spec"><code>pattern</code> — backend <code>pattern</code></div><div class="run-spec"><code>bert-conll</code> — backend <code>transformers</code> · model <code>dslim/bert-base-NER</code> · threshold 0.5</div><div class="run-spec"><code>gliner-medium</code> — backend <code>gliner</code> · model <code>urchade/gliner_medium-v2.1</code> · labels [person, organization, location, date, number, product, model, dataset, benchmark, metric, method] · threshold 0.5</div><div class="run-spec"><code>gliner-bi-large</code> — backend <code>gliner</code> · model <code>knowledgator/gliner-bi-large-v2.0</code> · labels [person, organization, location, date, number, product, model, dataset, benchmark, metric, method] · threshold 0.3</div><div class="run-spec"><code>nuner-zero</code> — backend <code>nuner</code> · model <code>numind/NuNER_Zero</code> · labels [person, organization, location, date, number, product, model, dataset, benchmark, metric, method]</div><div class="run-spec"><code>llm-mock</code> — backend <code>llm</code> · model <code>mock/ner</code> · provider <code>mock</code> · labels [person, organization, location, date, number, product, model, dataset, benchmark, metric, method] · temperature 0</div><div class="run-spec"><code>llm-gpt-oss</code> — backend <code>llm</code> · model <code>openai/gpt-oss-120b:free</code> · provider <code>openrouter</code> · labels [person, organization, location, date, number, product, model, dataset, benchmark, metric, method] · temperature 0</div>
+
+          <h3>Gold data format</h3>
+          <p>JSONL lines with <code>id</code>, <code>text</code>, and <code>entities</code> (each entity:
+          <code>text</code>, <code>label</code>, <code>start</code>, <code>end</code> character offsets).
+          Predictions without resolvable character offsets in the source text are skipped and counted in
+          <code>skipped_predictions</code>.</p>
+          <dl>
+            <dt><code>arxiv_gold</code></dt>
+            <dd>ML paper abstracts with scientific entity types (model, dataset, benchmark, metric, …).
+            <code>bert-conll</code> is excluded via per-run <code>datasets</code> in YAML (CoNLL labels only).
+            Use GLiNER (or <code>pattern</code> for numbers) with matching label strings.</dd>
+            <dt><code>synthetic_*</code></dt>
+            <dd>Procedural gold corpora (news, blog, scientific, transcript, mixed) with unified
+            person/organization/location/date labels — good for BERT and GLiNER baselines.</dd>
+          </dl>
+
+          <h3>Scoring metrics</h3>
+
+          <div class="metric-block">
+            <h4>Document-level string overlap F1 (Doc F1)</h4>
+            <p><strong>Objective.</strong> Did the backend recover the same salient concepts as gold, regardless
+            of how many times each string appears in the text?</p>
+            <p><strong>How it is computed.</strong> Per example, form sets of <code>(label, lowercased text)</code>
+            from gold spans and predictions (after <code>label_maps.yaml</code>). TP = set intersection size;
+            FP = predictions not in gold; FN = gold not in predictions. Micro-averaged precision, recall, and F1
+            across all examples. Repeated spans with the same label and surface string count once.</p>
+            <p><strong>Leaderboard.</strong> Global and per-dataset tables are sorted by Doc F1 (higher is better).
+            Rank #1 row is highlighted in green. Use this metric when gold marks salient entities (e.g.
+            <code>arxiv_gold</code>) rather than every token-level mention.</p>
+          </div>
+
+          <div class="metric-block">
+            <h4>Strict span F1</h4>
+            <p><strong>Objective.</strong> Exact entity detection: same unified label and identical
+            character span <code>(start, end)</code> as gold.</p>
+            <p><strong>How it is computed.</strong> Greedy one-to-one matching per example: each prediction
+            matches at most one gold span with the same label and exact offsets; unmatched predictions are FP,
+            unmatched gold are FN. Micro-averaged precision, recall, and F1 across all examples in the run.</p>
+            <p><strong>Use.</strong> Secondary table in the markdown report; penalizes extra mentions of the same
+            entity when gold annotates a single span.</p>
+          </div>
+
+          <div class="metric-block">
+            <h4>Relaxed span F1</h4>
+            <p><strong>Objective.</strong> Partial credit when boundaries differ slightly but the entity is
+            largely correct.</p>
+            <p><strong>How it is computed.</strong> Same label required; spans match if
+            intersection ÷ union (IoU) ≥ <strong>0.5</strong>. Also micro-averaged across the run.</p>
+            <p><strong>Use.</strong> Compare backends when tokenization or whitespace causes small boundary
+            shifts; do not treat relaxed F1 as “good enough” for production without manual review.</p>
+          </div>
+
+          <div class="metric-block">
+            <h4>Latency (ms / example)</h4>
+            <p><strong>Objective.</strong> Wall-clock time for the entire backend pass over the dataset,
+            divided by number of scored examples.</p>
+            <p><strong>Includes.</strong> Model load (first call in that run), inference, and Python overhead.
+            <strong>Excludes.</strong> Other backends’ runs; no warm-up run is performed separately.</p>
+            <p><strong>Caveats.</strong> Small datasets exaggerate load time; CPU vs GPU and batching differ by
+            backend. Use for rough operational comparison on the same machine, not absolute SLA numbers.</p>
+          </div>
+
+          <div class="metric-block">
+            <h4>Label confusion matrices</h4>
+            <p><strong>Per backend run</strong> (global and each dataset section). Rows are gold labels;
+            columns are predicted labels after <code>label_maps.yaml</code> normalization. Spans are paired
+            greedily (relaxed: IoU ≥ 0.5; strict: exact offsets). Diagonal cells = correct label at a paired
+            span. Column <code>∅ missed</code> = gold with no paired prediction; row <code>∅ spurious</code>
+            = prediction with no paired gold. Use relaxed matrices to diagnose label confusion; compare with
+            strict span pairing to separate boundary from type errors.</p>
+          </div>
+
+          <div class="metric-block">
+            <h4>Radar chart</h4>
+            <p><strong>Per dataset only.</strong> Three axes — Doc F1, strict span F1, and Speed — on a 0–1 scale
+            (higher is better). Quality metrics use raw scores. Speed uses a fixed reference:
+            <code>1 − (ms/example ÷ 1000)</code>, clamped to 0–1, so one second per example maps to 0 on the
+            Speed axis (not relative to the slowest backend in the chart).</p>
+            <p>Absolute ms/example remains in the leaderboard table. Polygon <strong>area</strong> is a visual
+            composite index only; it weights all axes equally and is not a substitute for reading Doc F1 and
+            latency separately.</p>
+          </div>
+
+          <h3>Label normalization</h3>
+          <p>Backend labels (e.g. CoNLL <code>PER</code>, GLiNER <code>person</code>) are mapped through
+          <code>label_maps.yaml</code> before scoring. Comparing F1 across datasets with incompatible label
+          schemes is misleading — e.g. do not rank <code>pattern</code> on CoNLL using Doc F1 alone.</p>
+
+          <h3>How to use this scorecard</h3>
+          <ul>
+            <li>Pick the dataset that matches your deployment labels and language.</li>
+            <li>Prefer <strong>Doc F1</strong> for salient-entity / concept extraction; use <strong>strict F1</strong>
+            when every span offset must match gold; use <strong>relaxed F1</strong> to diagnose boundary issues.</li>
+            <li>Read <strong>latency</strong> from the leaderboard table (absolute ms/example).</li>
+            <li>Use <strong>label confusion matrices</strong> to see which gold types are missed or mis-tagged.</li>
+            <li>Treat <code>pattern</code> as a fast regex baseline, not a ceiling for ML quality.</li>
+          </ul>
+
+          <div class="method-refs">
+            <h3>References &amp; data sources</h3>
+            <ul>
+              <li>CoNLL-2003 export: <a href="https://huggingface.co/datasets/eriktks/conll2003">eriktks/conll2003</a></li>
+              <li>Default BERT-NER: <a href="https://huggingface.co/dslim/bert-base-NER">dslim/bert-base-NER</a></li>
+              <li>GLiNER: <a href="https://huggingface.co/urchade/gliner_medium-v2.1">urchade/gliner_medium-v2.1</a></li>
+              <li>Project docs: <code>docs/benchmarks.md</code></li>
+            </ul>
+          </div>
+        </div>
+        </div>
+    </div>
+    
+
+    <footer>ner-detector · benchmark/run_benchmark.py</footer>
+  </div>
+</body>
+</html>
