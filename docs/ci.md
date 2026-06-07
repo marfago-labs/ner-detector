@@ -2,7 +2,7 @@
 
 ## Overview
 
-Workflows set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so JavaScript actions (checkout, cache, upload-artifact, setup-uv) run on Node 24 ahead of the Node 20 runner deprecation.
+Workflows use **Node 24–native action versions** (`actions/checkout@v5`, `astral-sh/setup-uv@v8.1.0`, `actions/cache@v5`, `actions/upload-artifact@v6`, `actions/deploy-pages@v5`, etc.) so CI does not rely on the deprecated Node 20 runtime or `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`.
 
 | Workflow | File | When it runs | Purpose |
 |----------|------|----------------|---------|
