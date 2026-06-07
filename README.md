@@ -116,6 +116,8 @@ uv run pytest tests/ -q --cov=ner_detector --cov-fail-under=95
 
 Coverage gate: **≥95%** on `ner_detector` (enforced in `pyproject.toml`). ML backends are tested with mocks — no model download in CI.
 
+**Secret scanning:** Gitleaks runs in CI (`secrets` job) and via pre-commit (see [docs/ci.md](docs/ci.md#secret-scanning-gitleaks)). Keep API keys in `.env` only.
+
 GitHub Actions:
 
 - **CI** (`.github/workflows/ci.yml`) — runs on every push/PR.
