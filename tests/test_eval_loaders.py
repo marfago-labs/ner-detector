@@ -149,6 +149,22 @@ def test_resolve_benchmark_root_sibling() -> None:
     assert (root / "datasets" / "synthetic_news_100.jsonl").is_file()
 
 
+def test_resolve_benchmark_root_from_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    datasets = tmp_path / "datasets"
+    datasets.mkdir()
+    (datasets / "sample.jsonl").write_text(
+        json.dumps({"id": "1", "text": "x", "entities": []}) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("NER_DATASET_DIR", str(datasets))
+    monkeypatch.chdir(tmp_path)
+    cfg = tmp_path / "benchmark" / "config" / "bench.yaml"
+    cfg.parent.mkdir(parents=True)
+    root = resolve_benchmark_root("../ner-dataset", config_path=cfg)
+    assert root == tmp_path
+    assert (root / "datasets" / "sample.jsonl").is_file()
+
+
 def test_load_synthetic_from_resolved_root() -> None:
     cfg = Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_generated.yaml"
     root = resolve_benchmark_root("../ner-dataset", config_path=cfg)

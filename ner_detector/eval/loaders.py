@@ -10,6 +10,18 @@ from ner_detector.eval.types import GoldEntity, GoldExample
 
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
 _SIBLING_NER_DATASET = _PACKAGE_ROOT.parent / "ner-dataset"
+_REPO_NER_DATASET = _PACKAGE_ROOT / "ner-dataset"
+
+
+def _env_dataset_root() -> Path | None:
+    """Return ner-dataset repo root from ``NER_DATASET_DIR`` when set and valid."""
+    env = os.environ.get("NER_DATASET_DIR", "").strip()
+    if not env:
+        return None
+    datasets_dir = Path(env).resolve()
+    if datasets_dir.is_dir():
+        return datasets_dir.parent
+    return None
 
 
 def sibling_ner_dataset_root() -> Path:
@@ -34,17 +46,20 @@ def resolve_benchmark_root(
     1. Absolute ``raw`` path
     2. ``raw`` relative to the benchmark config file (when *config_path* set)
     3. ``raw`` relative to the current working directory
-    4. Sibling ``../ner-dataset`` next to the ner-detector package
+    4. ``NER_DATASET_DIR`` parent (CI checks out ``ner-dataset`` into the workspace)
+    5. ``ner-dataset/`` inside the ner-detector repo (same CI layout)
+    6. Sibling ``../ner-dataset`` next to the ner-detector package (local monorepo)
     """
     if not raw:
         sibling = _SIBLING_NER_DATASET.resolve()
         if (sibling / "datasets").is_dir():
             return sibling
-        env = os.environ.get("NER_DATASET_DIR", "").strip()
-        if env:
-            datasets_dir = Path(env).resolve()
-            if datasets_dir.is_dir():
-                return datasets_dir.parent
+        env_root = _env_dataset_root()
+        if env_root is not None:
+            return env_root
+        repo_local = _REPO_NER_DATASET.resolve()
+        if (repo_local / "datasets").is_dir():
+            return repo_local
         return sibling
 
     path = Path(raw)
@@ -55,6 +70,12 @@ def resolve_benchmark_root(
     if config_path is not None:
         candidates.append((config_path.parent / path).resolve())
     candidates.append((Path.cwd() / path).resolve())
+    env_root = _env_dataset_root()
+    if env_root is not None and env_root not in candidates:
+        candidates.append(env_root)
+    repo_local = _REPO_NER_DATASET.resolve()
+    if repo_local not in candidates:
+        candidates.append(repo_local)
     sibling = _SIBLING_NER_DATASET.resolve()
     if sibling not in candidates:
         candidates.append(sibling)

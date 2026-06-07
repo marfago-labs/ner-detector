@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 import json
+import sys
+from types import ModuleType
 
 import pytest
 
 from ner_detector.backends.llm.client import MockLlmClient, OpenRouterChatClient, create_llm_client
 from ner_detector.backends.llm.settings import LlmEnvSettings
+
+
+def _install_fake_httpx(monkeypatch: pytest.MonkeyPatch, client_cls: type) -> None:
+    """Inject a fake httpx module so OpenRouter tests run without the llm extra."""
+    mod = ModuleType("httpx")
+    mod.Client = client_cls
+    monkeypatch.setitem(sys.modules, "httpx", mod)
 
 
 def test_mock_client_returns_json_entities() -> None:
@@ -62,7 +71,7 @@ def test_openrouter_http_error_raises_api_error(monkeypatch: pytest.MonkeyPatch)
         def post(self, *args: object, **kwargs: object) -> FakeResponse:
             return FakeResponse()
 
-    monkeypatch.setattr("httpx.Client", FakeClient)
+    _install_fake_httpx(monkeypatch, FakeClient)
     client = OpenRouterChatClient(
         LlmEnvSettings(openrouter_api_key="secret", openrouter_base_url="https://x/v1", mock_llm=False),
     )
@@ -97,7 +106,7 @@ def test_openrouter_complete_json(monkeypatch: pytest.MonkeyPatch) -> None:
             posted.append(kwargs["json"])
             return FakeResponse()
 
-    monkeypatch.setattr("httpx.Client", FakeClient)
+    _install_fake_httpx(monkeypatch, FakeClient)
     client = OpenRouterChatClient(
         LlmEnvSettings(openrouter_api_key="secret", openrouter_base_url="https://x/v1", mock_llm=False),
     )
