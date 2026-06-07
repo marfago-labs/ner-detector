@@ -95,10 +95,39 @@ uv run python benchmark/run_benchmark.py --help
 
 ## Metrics
 
-- **Strict F1**: exact character span + unified label
-- **Relaxed F1**: ≥50% span overlap + same label
+The benchmark reports three F1 scores (micro-averaged over all examples). Full definitions also appear in the HTML report **Metrics & methodology** tab.
+
+| Metric | Match rule |
+|--------|------------|
+| **Doc F1** (primary leaderboard) | Same unified `(label, lowercased text)`; span offsets ignored |
+| **Strict F1** | Same label and exact `(start, end)` character offsets |
+| **Relaxed F1** | Same label and span **IoU ≥ 0.5** |
+
 - **Latency**: ms per example (wall clock per trial). With `--repeats N`, reports **mean ± std** and min–max across trials (model cache cleared between repeat rounds, not between datasets).
 - **Score stability**: strict F1 must match across repeats; unstable runs are flagged in the report.
+
+### Relaxed span F1 (IoU ≥ 0.5)
+
+**IoU** (intersection over union) compares gold and predicted spans as half-open intervals `[start, end)` on the document text:
+
+```
+IoU = length(overlap) / length(union)
+```
+
+A prediction counts as a true positive when it has the **same normalized label** as gold and `IoU ≥ 0.5`. That threshold is the usual partial-credit bar in span NER eval: boundaries may differ slightly (whitespace, tokenization) but most of the entity must align.
+
+**Example** — text `"OpenAI"` (6 characters):
+
+| Gold | Prediction | IoU | Strict | Relaxed |
+|------|------------|-----|--------|---------|
+| `[0, 6)` org | `[0, 5)` org | 5/6 ≈ 0.83 | miss | match |
+| `[0, 6)` org | `[1, 6)` org | 5/6 ≈ 0.83 | miss | match |
+| `[0, 6)` org | `[0, 3)` org | 3/6 = 0.50 | miss | match |
+| `[0, 6)` org | `[0, 2)` org | 2/6 ≈ 0.33 | miss | miss |
+
+Pairing is **greedy one-to-one**: each prediction matches at most one gold span (first eligible gold in list order). Unmatched predictions are false positives; unmatched gold is false negatives. Label confusion matrices use the same IoU threshold; relaxed matrices pair by **maximum IoU** per prediction instead of first-fit (see `ner_detector/eval/confusion.py`).
+
+Implementation: `ner_detector/eval/metrics.py` (`RELAXED_SPAN_IOU_THRESHOLD`, `_overlap_ratio`).
 
 ## Interpreting results
 

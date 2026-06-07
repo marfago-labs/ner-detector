@@ -1,4 +1,13 @@
-"""Span-level precision, recall, and F1 for NER evaluation."""
+"""Span-level precision, recall, and F1 for NER evaluation.
+
+Three match modes are reported per example (micro-averaged across a run):
+
+- **Document** — unique ``(label, lowercased text)`` sets; boundaries ignored.
+- **Strict** — same label and exact ``(start, end)`` character offsets.
+- **Relaxed** — same label and span IoU ≥ ``RELAXED_SPAN_IOU_THRESHOLD`` (0.5).
+
+See ``docs/benchmarks.md`` and the benchmark HTML report *Metrics & methodology* tab.
+"""
 
 from __future__ import annotations
 
@@ -9,8 +18,16 @@ from ner_detector.eval.label_map import normalize_label
 from ner_detector.eval.types import EvalSpan, GoldEntity, GoldExample
 from ner_detector.types import DetectedEntity
 
+# Minimum intersection-over-union for a relaxed span match (common NER eval convention).
+RELAXED_SPAN_IOU_THRESHOLD = 0.5
+
 
 def _overlap_ratio(a_start: int, a_end: int, b_start: int, b_end: int) -> float:
+    """Span IoU: overlap length divided by union length on ``[start, end)`` offsets.
+
+    Returns ``0.0`` when spans do not overlap. Used for relaxed F1 and (via
+    ``ner_detector.eval.confusion``) relaxed label confusion matrices.
+    """
     inter = max(0, min(a_end, b_end) - max(a_start, b_start))
     if inter == 0:
         return 0.0
@@ -57,7 +74,11 @@ def match_prediction_to_gold(
     *,
     mode: str,
 ) -> int | None:
-    """Return index of first unmatched gold span that matches ``pred``, or None."""
+    """Return index of first unmatched gold span that matches ``pred``, or None.
+
+    ``mode`` is ``"document"``, ``"strict"``, or ``"relaxed"`` (IoU ≥
+    ``RELAXED_SPAN_IOU_THRESHOLD`` with the same label).
+    """
     for i, g in enumerate(gold):
         if i in matched_gold:
             continue
@@ -69,7 +90,10 @@ def match_prediction_to_gold(
             continue
         if mode == "strict" and g.as_tuple() == pred.as_tuple():
             return i
-        if mode == "relaxed" and _overlap_ratio(g.start, g.end, pred.start, pred.end) >= 0.5:
+        if (
+            mode == "relaxed"
+            and _overlap_ratio(g.start, g.end, pred.start, pred.end) >= RELAXED_SPAN_IOU_THRESHOLD
+        ):
             return i
     return None
 
@@ -87,7 +111,13 @@ def _match_counts(
     *,
     relaxed: bool,
 ) -> tuple[int, int, int]:
-    """Return (tp, fp, fn) for one example."""
+    """Return (tp, fp, fn) for one example via greedy one-to-one span pairing.
+
+    Iterates predictions in order; each pairs with the first unmatched gold span
+    that satisfies strict (exact offsets) or relaxed (same label, IoU ≥
+    ``RELAXED_SPAN_IOU_THRESHOLD``) rules. Unmatched predictions are FP;
+    unmatched gold spans are FN.
+    """
     matched_gold: set[int] = set()
     tp = 0
     for p in pred:
@@ -98,7 +128,7 @@ def _match_counts(
             if g.label != p.label:
                 continue
             if relaxed:
-                if _overlap_ratio(g.start, g.end, p.start, p.end) >= 0.5:
+                if _overlap_ratio(g.start, g.end, p.start, p.end) >= RELAXED_SPAN_IOU_THRESHOLD:
                     found = True
                     matched_gold.add(i)
                     break
