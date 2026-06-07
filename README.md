@@ -1,18 +1,20 @@
 # ner-detector
 
-Named entity recognition (NER) with **pluggable backends**: deterministic regex (`pattern`), fixed-label BERT (`transformers`), zero-shot GLiNER (`gliner`), and chat LLM (`llm` via OpenRouter or mock).
+Named entity recognition (NER) with **pluggable backends**: deterministic regex (`pattern`), fixed-label BERT (`transformers`), zero-shot GLiNER (`gliner`), NuNER (`nuner`), and chat LLM (`llm` via OpenRouter or mock).
 
-**[📊 View the Live Benchmark Report](https://marfago-labs.github.io/ner-detector/)**
+**Benchmark report:** [GitHub Pages](https://marfago-labs.github.io/ner-detector/) · [Run locally](docs/benchmarks.md) · [Recruiter / LinkedIn brief](docs/portfolio.md)
 
-Part of [marfago-labs](https://github.com/marfago-labs). Standalone experiment for entity extraction and evaluation pipelines.
+Part of [marfago-labs](https://github.com/marfago-labs). MIT licensed. Pairs with [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) and [ner-dataset](https://github.com/marfago-labs/ner-dataset).
+
+> **Pages setup:** the live report URL works after enabling GitHub Pages (Settings → Pages → GitHub Actions) and a successful **Benchmark report (Pages)** workflow run. See [docs/ci.md](docs/ci.md).
 
 ## Architecture & Benchmark Trade-offs
 
-This framework rigorously evaluates multiple NLP paradigms on both synthetic procedural data and dense salient-concept scientific abstracts. Key findings from our benchmarking:
+Evidence-driven comparison on shared gold data (`synthetic_news_100`, salient-entity `arxiv_gold`). Latest run: `compare_backends.yaml`, Doc F1 as primary metric.
 
-- **LLMs (e.g., GPT-4 class via OpenRouter):** Achieved the highest extraction quality (84% Doc F1 on synthetic news, ~50% on sparse scientific abstracts). However, inference latency is extremely high (~7–9 seconds per document), making them ideal for offline batched extraction where accuracy outweighs speed.
-- **Transformers (e.g., BERT-base-NER):** Extremely fast (~80ms per document) with strong accuracy (72% Doc F1) on standard entity types (PER, ORG, LOC). This remains the optimal choice for real-time processing on standard schemas.
-- **Zero-shot (e.g., GLiNER):** Offers the best middle ground for custom schemas (e.g., extracting scientific concepts like datasets and metrics) without needing retraining. `gliner-medium` provides solid extraction at ~200-400ms per document.
+- **LLMs (`openai/gpt-oss-120b:free` via OpenRouter):** Highest Doc F1 (~84% synthetic news, ~47% sparse arxiv abstracts). Latency ~7–9 s/document — best for offline or batched extraction when quality dominates.
+- **Transformers (`dslim/bert-base-NER`):** ~80 ms/document, ~73% Doc F1 on standard PER/ORG/LOC-style gold — best real-time baseline on fixed schemas.
+- **Zero-shot GLiNER:** Custom labels without retraining (~36–39% Doc F1 on arxiv scientific types, ~200–400 ms/doc) — practical middle ground for domain-specific entity types.
 
 ## Quick start
 
@@ -117,9 +119,7 @@ Coverage gate: **≥95%** on `ner_detector` (enforced in `pyproject.toml`). ML b
 GitHub Actions:
 
 - **CI** (`.github/workflows/ci.yml`) — runs on every push/PR.
-- **Benchmark report** (`.github/workflows/benchmark-pages.yml`) — publishes `report.html` to GitHub Pages; configure repeats and backends via [repository variables and secrets](docs/ci.md).
-
-After Pages is enabled, the live report URL is shown under **Settings → Pages** (link it from the README when ready).
+- **Benchmark report** (`.github/workflows/benchmark-pages.yml`) — publishes `report.html` to GitHub Pages; configure via [docs/ci.md](docs/ci.md) (secrets, variables, first-time Pages enablement).
 
 ## Documentation
 
@@ -134,6 +134,7 @@ After Pages is enabled, the live report URL is shown under **Settings → Pages*
 | [docs/models.md](docs/models.md) | Model picks (HF / GitHub) |
 | [docs/benchmarks.md](docs/benchmarks.md) | Compare backends on gold data |
 | [docs/ci.md](docs/ci.md) | GitHub Actions, Pages, variables/secrets |
+| [docs/portfolio.md](docs/portfolio.md) | LinkedIn / recruiter copy, publish checklist |
 
 ## Benchmark
 

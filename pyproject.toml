@@ -3,6 +3,7 @@ name = "ner-detector"
 version = "0.1.0"
 description = "Named entity recognition with pluggable deterministic, ML, and LLM backends"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.10.0",

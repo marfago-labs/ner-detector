@@ -13,6 +13,7 @@ Pluggable **named entity recognition**: pattern (offline), Hugging Face token-cl
 | [Model survey](models.md) | Best NER models (Hugging Face, GitHub, benchmarks) |
 | [Benchmarks](benchmarks.md) | Gold datasets, backend comparison reports |
 | [CI & Pages](ci.md) | GitHub Actions, published benchmark report, variables/secrets |
+| [Portfolio brief](portfolio.md) | LinkedIn Featured copy, publish checklist |
 
 ## Quick start
 
