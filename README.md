@@ -2,7 +2,17 @@
 
 Named entity recognition (NER) with **pluggable backends**: deterministic regex (`pattern`), fixed-label BERT (`transformers`), zero-shot GLiNER (`gliner`), and chat LLM (`llm` via OpenRouter or mock).
 
+**[📊 View the Live Benchmark Report](https://marfago-labs.github.io/ner-detector/)**
+
 Part of [marfago-labs](https://github.com/marfago-labs). Standalone experiment for entity extraction and evaluation pipelines.
+
+## Architecture & Benchmark Trade-offs
+
+This framework rigorously evaluates multiple NLP paradigms on both synthetic procedural data and dense salient-concept scientific abstracts. Key findings from our benchmarking:
+
+- **LLMs (e.g., GPT-4 class via OpenRouter):** Achieved the highest extraction quality (84% Doc F1 on synthetic news, ~50% on sparse scientific abstracts). However, inference latency is extremely high (~7–9 seconds per document), making them ideal for offline batched extraction where accuracy outweighs speed.
+- **Transformers (e.g., BERT-base-NER):** Extremely fast (~80ms per document) with strong accuracy (72% Doc F1) on standard entity types (PER, ORG, LOC). This remains the optimal choice for real-time processing on standard schemas.
+- **Zero-shot (e.g., GLiNER):** Offers the best middle ground for custom schemas (e.g., extracting scientific concepts like datasets and metrics) without needing retraining. `gliner-medium` provides solid extraction at ~200-400ms per document.
 
 ## Quick start
 
