@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-from pathlib import Path
 
 from ner_detector.eval.runner import BenchmarkResult, load_benchmark_config
 
@@ -146,7 +145,7 @@ def render_report_tabs(
         curves_input = (
             f'<input type="radio" name="{tab_prefix}-tab" id="{curves_id}" class="tab-input">'
         )
-        curves_nav_label = f"<label for=\"{curves_id}\">{curves_label}</label>"
+        curves_nav_label = f'<label for="{curves_id}">{curves_label}</label>'
         curves_panel = f'<div class="tab-panel tab-panel-curves">{curves_html}</div>'
     return f"""
     <div class="report-tabs">

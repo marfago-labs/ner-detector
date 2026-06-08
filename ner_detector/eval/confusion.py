@@ -71,10 +71,7 @@ class LabelConfusionMatrix:
         return {
             "rows": self.row_labels(),
             "cols": self.col_labels(),
-            "counts": [
-                {"gold": g, "pred": p, "n": n}
-                for (g, p), n in sorted(self.counts.items())
-            ],
+            "counts": [{"gold": g, "pred": p, "n": n} for (g, p), n in sorted(self.counts.items())],
             "total": self.total(),
         }
 

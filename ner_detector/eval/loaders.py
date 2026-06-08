@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from ner_detector.eval.types import GoldEntity, GoldExample
+from ner_detector.eval.types import GoldExample
 
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
 _SIBLING_NER_DATASET = _PACKAGE_ROOT.parent / "ner-dataset"

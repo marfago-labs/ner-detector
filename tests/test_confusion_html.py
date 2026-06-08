@@ -23,7 +23,12 @@ def test_render_confusion_matrix_includes_headers() -> None:
 
 
 def test_render_run_confusion_html_skips_empty() -> None:
-    assert render_run_confusion_html("run-a", LabelConfusionMatrix.empty(), LabelConfusionMatrix.empty()) == ""
+    assert (
+        render_run_confusion_html(
+            "run-a", LabelConfusionMatrix.empty(), LabelConfusionMatrix.empty()
+        )
+        == ""
+    )
 
 
 def test_render_run_confusion_html_includes_both_modes() -> None:

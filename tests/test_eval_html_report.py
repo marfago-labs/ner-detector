@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from ner_detector.eval.confusion import LabelConfusionMatrix
 from ner_detector.eval.html_report import (
     LATENCY_REFERENCE_MS,
     _aggregate_global_results,
@@ -14,11 +15,10 @@ from ner_detector.eval.html_report import (
     render_html_report,
     write_html_report,
 )
-from ner_detector.eval.confusion import LabelConfusionMatrix
 from ner_detector.eval.metrics import EntityScores, ScoreSummary
 from ner_detector.eval.radar_svg import (
-    build_run_color_map,
     build_radar_series,
+    build_run_color_map,
     render_radar_section_html,
 )
 from ner_detector.eval.runner import BenchmarkResult, RunResult
@@ -33,9 +33,7 @@ def _confusion_sample(counts: dict[tuple[str, str], int]) -> LabelConfusionMatri
 
 
 def _sample_benchmark() -> BenchmarkResult:
-    confusion_a = _confusion_sample(
-        {("person", "person"): 2, ("organization", "organization"): 1}
-    )
+    confusion_a = _confusion_sample({("person", "person"): 2, ("organization", "organization"): 1})
     summary_a = ScoreSummary(
         strict=EntityScores(tp=6, fp=2, fn=4),
         relaxed=EntityScores(tp=7, fp=1, fn=3),
@@ -249,7 +247,9 @@ def test_html_report_omits_datasets_without_results() -> None:
 
 def test_html_report_partial_run_notice() -> None:
     br = _sample_benchmark()
-    br.config_path = Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_generated.yaml"
+    br.config_path = (
+        Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_generated.yaml"
+    )
     html = render_html_report(br)
     assert "Partial run" in html
     assert "synthetic_news_100" in html

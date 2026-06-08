@@ -20,7 +20,7 @@ THRESHOLD_BACKENDS: frozenset[NerBackend] = frozenset(
 
 def backend_family(backend: str) -> str:
     """Return ``deterministic``, ``ml``, or ``llm`` for a backend name."""
-    return BACKEND_FAMILIES.get(backend, "unknown")  # type: ignore[arg-type]
+    return BACKEND_FAMILIES.get(backend, "unknown")  # type: ignore[call-overload]
 
 
 def uses_score_threshold(backend: str) -> bool:

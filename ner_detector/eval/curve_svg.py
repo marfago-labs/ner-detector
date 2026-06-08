@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 from typing import Any
 
-from ner_detector.eval.radar_svg import color_for_run, build_run_color_map
+from ner_detector.eval.radar_svg import build_run_color_map, color_for_run
 
 _CURVE_CSS = """
     .curve-chart-wrap {
@@ -179,9 +179,9 @@ def render_dataset_curves_html(
     ds_label = html.escape(dataset)
 
     legend = "".join(
-        f'<span style="color:{html.escape(color_for_run(str(r.get("run_name","")), cmap))}">'
-        f'{html.escape(str(r.get("run_name","")))} '
-        f'(AUC-PR {float(r.get("auc_pr", 0)):.3f})</span>'
+        f'<span style="color:{html.escape(color_for_run(str(r.get("run_name", "")), cmap))}">'
+        f"{html.escape(str(r.get('run_name', '')))} "
+        f"(AUC-PR {float(r.get('auc_pr', 0)):.3f})</span>"
         for r in runs
         if r.get("pr")
     )

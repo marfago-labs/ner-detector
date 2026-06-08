@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from ner_detector.backends.families import THRESHOLD_BACKENDS
 from ner_detector.eval.metrics import (
     count_gold_units,
     gold_to_span,
@@ -19,6 +20,11 @@ MatchMode = Literal["strict", "relaxed", "document"]
 MATCH_MODES: tuple[MatchMode, ...] = ("strict", "relaxed", "document")
 
 DEFAULT_INFERENCE_THRESHOLD = 0.0
+
+
+def uses_threshold_backend(backend: str) -> bool:
+    """True for ML backends that expose per-entity confidence scores."""
+    return backend in THRESHOLD_BACKENDS
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,9 +55,6 @@ class CurvePoint:
         return out
 
 
-from ner_detector.backends.families import uses_score_threshold as uses_threshold_backend
-
-
 def _default_score(entity: DetectedEntity) -> float:
     return float(entity.score) if entity.score is not None else 0.0
 
@@ -80,9 +83,7 @@ def _gold_spans_for_examples(
     *,
     label_map: str,
 ) -> list[list]:
-    return [
-        [gold_to_span(e, label_map=label_map) for e in ex.entities] for ex in examples
-    ]
+    return [[gold_to_span(e, label_map=label_map) for e in ex.entities] for ex in examples]
 
 
 def total_gold_units(
@@ -249,9 +250,7 @@ def curves_for_run(
     operating_threshold: float = 0.5,
 ) -> dict[str, Any]:
     """Compute PR/ROC curves and AUCs for all match modes."""
-    ranked = build_ranked_predictions(
-        examples, predictions_per_example, label_map=label_map
-    )
+    ranked = build_ranked_predictions(examples, predictions_per_example, label_map=label_map)
     modes_out: dict[str, Any] = {}
     for mode in MATCH_MODES:
         pr_pts = pr_curve_points(ranked, examples, label_map=label_map, mode=mode)

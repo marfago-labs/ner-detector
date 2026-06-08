@@ -159,7 +159,7 @@ def _match_document_counts(
     """Calculate TP, FP, FN based on unique (label, lower(text)) sets per document."""
     gold_set = {(g.label, g.text.strip().lower()) for g in gold}
     pred_set = {(p.label, p.text.strip().lower()) for p in pred}
-    
+
     tp = len(gold_set.intersection(pred_set))
     fp = len(pred_set - gold_set)
     fn = len(gold_set - pred_set)

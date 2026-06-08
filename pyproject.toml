@@ -27,6 +27,9 @@ llm = [
 dev = [
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+    "pre-commit>=4.0.0",
 ]
 
 [project.scripts]
@@ -49,3 +52,30 @@ source = ["ner_detector"]
 [tool.coverage.report]
 fail_under = 95
 show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["ner_detector", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"ner_detector/cli.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ner_detector"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+packages = ["ner_detector"]
+warn_unused_configs = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true

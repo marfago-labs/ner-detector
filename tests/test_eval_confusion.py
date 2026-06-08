@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from ner_detector.eval.confusion import (
     MISSED_COL,
     SPURIOUS_ROW,

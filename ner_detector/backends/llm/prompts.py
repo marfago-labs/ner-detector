@@ -67,8 +67,7 @@ def build_ner_messages(
     user_parts = [f"Allowed labels: {label_list}"]
     if label_definitions:
         user_parts.append(
-            "Entity type definitions:\n"
-            + _format_label_definitions(labels, label_definitions),
+            "Entity type definitions:\n" + _format_label_definitions(labels, label_definitions),
         )
     if few_shot_examples:
         formatted = _format_few_shot_examples(few_shot_examples)
@@ -76,8 +75,7 @@ def build_ner_messages(
             user_parts.append(f"Few-shot examples:\n{formatted}")
     user_parts.append(f"Text:\n{text}")
     user_parts.append(
-        "Example response shape (replace values with entities from the text above):\n"
-        f"{example}",
+        f"Example response shape (replace values with entities from the text above):\n{example}",
     )
     user = "\n\n".join(user_parts)
     return [

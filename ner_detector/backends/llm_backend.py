@@ -86,19 +86,22 @@ class LlmBackend:
         return []
 
     def _complete_chunk(self, chunk: str, *, labels: list[str]) -> str:
-        kwargs = {
-            "labels": labels,
-            "model_id": self.model_id,
-            "label_definitions": self.label_definitions,
-            "few_shot_examples": self.few_shot_examples,
-        }
         if isinstance(self._client, OpenRouterChatClient):
             return self._client.complete_json(
                 chunk,
+                labels=labels,
+                model_id=self.model_id,
                 temperature=self.temperature,
-                **kwargs,
+                label_definitions=self.label_definitions,
+                few_shot_examples=self.few_shot_examples,
             )
-        return self._client.complete_json(chunk, **kwargs)
+        return self._client.complete_json(
+            chunk,
+            labels=labels,
+            model_id=self.model_id,
+            label_definitions=self.label_definitions,
+            few_shot_examples=self.few_shot_examples,
+        )
 
 
 def _response_has_entity_items(raw: str) -> bool:

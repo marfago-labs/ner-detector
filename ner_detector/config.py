@@ -227,9 +227,7 @@ def resolve_ner_settings(
         label_definition_preset=file_cfg.label_definition_preset,
     )
     resolved_few_shot = (
-        few_shot_examples
-        if few_shot_examples is not None
-        else file_cfg.few_shot_examples
+        few_shot_examples if few_shot_examples is not None else file_cfg.few_shot_examples
     )
 
     return ResolvedNerSettings(

@@ -12,9 +12,9 @@ import yaml
 
 from ner_detector.config import resolve_label_definitions
 from ner_detector.detect import detect_entities
-from ner_detector.eval.loaders import benchmark_root, load_dataset, resolve_benchmark_root
+from ner_detector.eval.loaders import load_dataset, resolve_benchmark_root
 from ner_detector.eval.metrics import ScoreSummary, score_example
-from ner_detector.eval.repeat_stats import LatencyStats, compute_latency_stats, format_latency_mean_std
+from ner_detector.eval.repeat_stats import LatencyStats, compute_latency_stats
 from ner_detector.eval.types import BackendRunSpec, BenchmarkConfig, GoldExample
 from ner_detector.registry import clear_backend_cache
 from ner_detector.types import NerBackend
@@ -121,13 +121,9 @@ def load_benchmark_config(path: Path) -> BenchmarkConfig:
                 datasets=run_datasets,
                 provider=item.get("provider"),
                 temperature=(
-                    float(item["temperature"])
-                    if item.get("temperature") is not None
-                    else None
+                    float(item["temperature"]) if item.get("temperature") is not None else None
                 ),
-                max_chars=(
-                    int(item["max_chars"]) if item.get("max_chars") is not None else None
-                ),
+                max_chars=(int(item["max_chars"]) if item.get("max_chars") is not None else None),
                 label_definition_preset=item.get("label_definition_preset"),
                 label_definitions=item.get("label_definitions"),
                 few_shot_examples=item.get("few_shot_examples"),
@@ -304,10 +300,7 @@ def _run_backend_on_dataset(
     error: str | None = None
     if example_errors:
         total = len(examples)
-        error = (
-            f"{len(example_errors)}/{total} examples failed; "
-            f"first: {example_errors[0]}"
-        )
+        error = f"{len(example_errors)}/{total} examples failed; first: {example_errors[0]}"
         if len(example_errors) > 1:
             error += f"; last: {example_errors[-1]}"
     elif summary.n_examples == 0 and examples:
@@ -340,11 +333,7 @@ def run_benchmark(
     n_repeats = max(1, repeats if repeats is not None else cfg.repeats)
     root = resolve_benchmark_root(cfg.benchmark_root, config_path=config_path)
     selected_datasets = datasets if datasets else cfg.datasets
-    selected_runs = (
-        [r for r in cfg.runs if r.name in run_names]
-        if run_names
-        else cfg.runs
-    )
+    selected_runs = [r for r in cfg.runs if r.name in run_names] if run_names else cfg.runs
 
     benchmark = BenchmarkResult(
         config_path=config_path,
@@ -364,12 +353,8 @@ def run_benchmark(
             if repeat_idx > 0:
                 clear_backend_cache()
             for dataset_name in run_datasets:
-                examples = load_dataset(
-                    dataset_name, root=root, max_examples=max_examples
-                )
-                trial = _run_backend_on_dataset(
-                    spec, examples, label_map=cfg.label_map
-                )
+                examples = load_dataset(dataset_name, root=root, max_examples=max_examples)
+                trial = _run_backend_on_dataset(spec, examples, label_map=cfg.label_map)
                 trial.dataset = dataset_name
                 trial_buckets.setdefault((spec.name, dataset_name), []).append(trial)
 

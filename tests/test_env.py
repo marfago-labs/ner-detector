@@ -38,9 +38,7 @@ def test_load_project_env_only_once(tmp_path: Path) -> None:
     _reset_env_module()
 
 
-def test_load_project_env_without_dotenv_package(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_load_project_env_without_dotenv_package(tmp_path: Path, monkeypatch) -> None:
     _reset_env_module()
     dotenv = tmp_path / ".env"
     dotenv.write_text("X=1\n", encoding="utf-8")

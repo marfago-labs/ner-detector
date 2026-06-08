@@ -86,9 +86,7 @@ def render_confusion_matrix_html(
         return ""
 
     max_count = max(matrix.counts.values()) if matrix.counts else 0
-    header = "".join(
-        f'<th class="col-head" scope="col">{html.escape(col)}</th>' for col in cols
-    )
+    header = "".join(f'<th class="col-head" scope="col">{html.escape(col)}</th>' for col in cols)
     body_rows: list[str] = []
     for gold in rows:
         cells: list[str] = []
@@ -96,17 +94,16 @@ def render_confusion_matrix_html(
             count = matrix.get(gold, pred)
             css = _cell_class(gold, pred, count)
             extra = ""
-            if count > 0 and gold not in {SPURIOUS_ROW} and pred not in {MISSED_COL}:
-                if gold != pred:
-                    extra = f' style="{_cell_background(count, max_count)}"'
-            cells.append(
-                f'<td class="{css}"{extra}>{count if count else "·"}</td>'
-            )
+            if (
+                count > 0
+                and gold not in {SPURIOUS_ROW}
+                and pred not in {MISSED_COL}
+                and gold != pred
+            ):
+                extra = f' style="{_cell_background(count, max_count)}"'
+            cells.append(f'<td class="{css}"{extra}>{count if count else "·"}</td>')
         body_rows.append(
-            "<tr>"
-            f'<th class="row-head" scope="row">{html.escape(gold)}</th>'
-            f'{"".join(cells)}'
-            "</tr>"
+            f'<tr><th class="row-head" scope="row">{html.escape(gold)}</th>{"".join(cells)}</tr>'
         )
 
     return f"""

@@ -73,7 +73,9 @@ def test_openrouter_http_error_raises_api_error(monkeypatch: pytest.MonkeyPatch)
 
     _install_fake_httpx(monkeypatch, FakeClient)
     client = OpenRouterChatClient(
-        LlmEnvSettings(openrouter_api_key="secret", openrouter_base_url="https://x/v1", mock_llm=False),
+        LlmEnvSettings(
+            openrouter_api_key="secret", openrouter_base_url="https://x/v1", mock_llm=False
+        ),
     )
     from ner_detector.backends.llm.client import OpenRouterApiError
 
@@ -108,7 +110,9 @@ def test_openrouter_complete_json(monkeypatch: pytest.MonkeyPatch) -> None:
 
     _install_fake_httpx(monkeypatch, FakeClient)
     client = OpenRouterChatClient(
-        LlmEnvSettings(openrouter_api_key="secret", openrouter_base_url="https://x/v1", mock_llm=False),
+        LlmEnvSettings(
+            openrouter_api_key="secret", openrouter_base_url="https://x/v1", mock_llm=False
+        ),
     )
     raw = client.complete_json("hello", labels=["person"], model_id="m")
     assert "entities" in raw

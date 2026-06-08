@@ -63,8 +63,7 @@ class MockLlmClient:
         entities = PatternBackend().detect(text, labels=labels, threshold=0.0)
         payload = {
             "entities": [
-                {"text": e.text, "label": e.label, "score": e.score or 1.0}
-                for e in entities
+                {"text": e.text, "label": e.label, "score": e.score or 1.0} for e in entities
             ],
         }
         return json.dumps(payload, ensure_ascii=False)

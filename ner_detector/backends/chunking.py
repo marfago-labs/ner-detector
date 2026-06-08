@@ -77,9 +77,7 @@ def merge_overlapping_entities(
         if ent.start is not None and ent.end is not None and ent.end > ent.start
     ]
     unpositioned = [
-        ent
-        for ent in entities
-        if ent.start is None or ent.end is None or ent.end <= ent.start
+        ent for ent in entities if ent.start is None or ent.end is None or ent.end <= ent.start
     ]
     positioned.sort(key=lambda e: (e.label, e.start or 0, e.end or 0))
     merged: list[DetectedEntity] = []

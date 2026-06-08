@@ -39,9 +39,10 @@ def test_cli_module_list_models() -> None:
 def test_cli_module_main_block() -> None:
     import ner_detector.cli as cli_mod
 
-    with patch.object(cli_mod, "main", return_value=0) as mock_main:
-        with pytest.raises(SystemExit) as exc:
-            if True:
-                raise SystemExit(cli_mod.main())
+    with (
+        patch.object(cli_mod, "main", return_value=0) as mock_main,
+        pytest.raises(SystemExit) as exc,
+    ):
+        raise SystemExit(cli_mod.main())
     assert exc.value.code == 0
     mock_main.assert_called_once()
