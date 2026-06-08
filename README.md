@@ -2,7 +2,7 @@
 
 Named entity recognition (NER) with **pluggable backends**: deterministic regex (`pattern`), fixed-label BERT (`transformers`), zero-shot GLiNER (`gliner`), NuNER (`nuner`), and chat LLM (`llm` via OpenRouter or mock).
 
-**Benchmark report:** [GitHub Pages](https://marfago-labs.github.io/ner-detector/) · [Run locally](docs/benchmarks.md) · [Recruiter / LinkedIn brief](docs/portfolio.md)
+**Benchmark report:** [GitHub Pages](https://marfago-labs.github.io/ner-detector/) · [Run locally](docs/benchmarks.md) · [Portfolio brief](docs/portfolio.md)
 
 Part of [marfago-labs](https://github.com/marfago-labs). MIT licensed. Pairs with [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) and [ner-dataset](https://github.com/marfago-labs/ner-dataset).
 
@@ -38,6 +38,25 @@ uv sync --extra dev --extra ml          # transformers + torch
 uv sync --extra dev --extra ml --extra gliner
 uv sync --extra dev --extra llm         # OpenRouter HTTP client (mock works without API key)
 ```
+
+## API keys and `.env`
+
+Most flows need **no API keys** (pattern backend, tests, `agent_smoke.py`, `--pattern-only` benchmarks).
+
+| What you run | Keys needed |
+|--------------|-------------|
+| Pattern / mock LLM | None |
+| ML backends (BERT, GLiNER, NuNER) | None (optional [`HF_TOKEN`](https://huggingface.co/settings/tokens) for gated models or rate limits) |
+| Live LLM NER (`backend: llm`, OpenRouter) | [`OPENROUTER_API_KEY`](https://openrouter.ai/keys) + `uv sync --extra llm` |
+
+Local setup:
+
+```bash
+cp .env.example .env
+# Edit .env — set OPENROUTER_API_KEY only if using live OpenRouter
+```
+
+Never commit `.env`. Full variable list: [docs/configuration.md](docs/configuration.md#environment). GitHub Actions secrets for the published benchmark report: [docs/ci.md](docs/ci.md#repository-secrets).
 
 ## Configuration
 
@@ -136,7 +155,16 @@ GitHub Actions:
 | [docs/models.md](docs/models.md) | Model picks (HF / GitHub) |
 | [docs/benchmarks.md](docs/benchmarks.md) | Compare backends on gold data |
 | [docs/ci.md](docs/ci.md) | GitHub Actions, Pages, variables/secrets |
-| [docs/portfolio.md](docs/portfolio.md) | LinkedIn / recruiter copy, publish checklist |
+| [docs/portfolio.md](docs/portfolio.md) | Ecosystem pitch and publish checklist |
+| [docs/for-agents.md](docs/for-agents.md) | Coding-agent tasks, contracts, smoke workflow |
+| [docs/adr/001-doc-f1-primary-metric.md](docs/adr/001-doc-f1-primary-metric.md) | Why Doc F1 is the primary metric |
+
+## Limitations
+
+- **Corpus size:** ~510 documents total (`arxiv_gold` = 10 salient-annotated abstracts; synthetics = 100 each). Regression and methodology gold—not a SOTA leaderboard dataset.
+- **Doc F1 primary:** Salient-entity gold uses document-level F1 as the headline metric; read [docs/benchmarks.md](docs/benchmarks.md) and [ADR 001](docs/adr/001-doc-f1-primary-metric.md) before comparing to external span-F1 benchmarks.
+- **CI scope:** Fast CI uses mocks (`--extra dev` only); full ML/LLM benchmarks run separately (see [docs/ci.md](docs/ci.md)).
+- **Live LLM runs:** OpenRouter model ids (especially `:free` tiers) can change or retire; pin models in benchmark YAML for reproducibility.
 
 ## Benchmark
 

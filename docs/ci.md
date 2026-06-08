@@ -84,9 +84,16 @@ Gold JSONL files are loaded from the checked-out **[ner-dataset](https://github.
 
 ## Repository secrets
 
+Set under **Settings → Secrets and variables → Actions → Secrets** (repository scope).
+
 | Secret | Required | Description |
 |--------|----------|-------------|
-| `HF_TOKEN` | No | Hugging Face token for higher rate limits when downloading models |
+| `OPENROUTER_API_KEY` | No* | OpenRouter API key for LLM benchmark runs (`llm-gpt-oss`, etc.). Omit or use `BENCHMARK_PATTERN_ONLY=true` for pattern-only reports. |
+| `HF_TOKEN` | No | [Hugging Face token](https://huggingface.co/settings/tokens) for gated models or higher download rate limits |
+
+\*Required only when the benchmark config includes live OpenRouter backends and `BENCHMARK_PATTERN_ONLY` is not `true`. The workflow passes these to the job environment (see `.github/workflows/benchmark-pages.yml`).
+
+Local parity uses `.env` instead — see [configuration.md](configuration.md#environment) and `.env.example`.
 
 ---
 
