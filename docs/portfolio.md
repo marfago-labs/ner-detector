@@ -19,6 +19,7 @@ I built **ner-detector** as part of [marfago-labs](https://github.com/marfago-la
 - Pluggable backends: pattern (regex), BERT (`transformers`), zero-shot GLiNER / NuNER, and LLM extraction via OpenRouter
 - Rigorous evaluation: document-level F1, strict span F1, relaxed span F1 (IoU ≥ 0.5), label confusion matrices, latency per document
 - Engineering bar: ≥95% test coverage, typed Python, CI, auto-generated HTML benchmark reports
+- Agent-legible: schema-documented gold, YAML-driven benchmarks, [for-agents.md](for-agents.md) + offline `scripts/agent_smoke.py` for coding agents
 
 **Latest findings** (canonical gold, `compare_backends.yaml`)
 
@@ -31,11 +32,17 @@ I built **ner-detector** as part of [marfago-labs](https://github.com/marfago-la
 
 **Ecosystem:** [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) → [ner-dataset](https://github.com/marfago-labs/ner-dataset) → **ner-detector** (this repo).
 
-**Links:** [GitHub — ner-detector](https://github.com/marfago-labs/ner-detector) · [Live benchmark report](https://marfago-labs.github.io/ner-detector/) *(after GitHub Pages is enabled)*
+**Links:** [GitHub — ner-detector](https://github.com/marfago-labs/ner-detector) · [Live benchmark report](https://marfago-labs.github.io/ner-detector/) · [Dataset stats](https://marfago-labs.github.io/ner-dataset/)
 
-## ArXplorer project blurb
+## Agent-legible engineering
 
-**ArXplorer** uses AI agents to search and analyze arXiv papers. Extraction quality for scientific entities (models, datasets, benchmarks, metrics) is backed by the marfago-labs NER stack: gold built with **ner-gold-generator**, stored in **ner-dataset**, and backends compared with **ner-detector** so we choose LLM vs zero-shot vs classical models based on measured accuracy and latency—not hype.
+Secondary portfolio narrative (not a replacement for measured eval):
+
+- **Contracts in docs:** [gold schema](https://github.com/marfago-labs/ner-gold-generator/blob/master/docs/gold-schema.md), [benchmark YAML](../benchmark/config/compare_backends.yaml), [ADR 001](adr/001-doc-f1-primary-metric.md)
+- **Machine-readable outputs:** `metrics.json`, [ner-dataset stats.json](https://github.com/marfago-labs/ner-dataset/blob/master/docs/stats.json)
+- **Agent entrypoint:** [for-agents.md](for-agents.md), repo-root `llms.txt`, `uv run python scripts/agent_smoke.py` (pattern-only, no API keys)
+
+Prefer "agent-legible" or "documentation-first for human and AI contributors" over vague "AI-ready."
 
 ## Short post hook (optional)
 
@@ -46,7 +53,12 @@ I built **ner-detector** as part of [marfago-labs](https://github.com/marfago-la
 Before sharing widely with recruiters:
 
 1. **Push** local commits to `marfago-labs/ner-detector` on GitHub.
-2. **Visibility:** repo is currently **private** — set to **public** if you want open portfolio links.
+2. **Visibility:** set repo to **public** if you want open portfolio links.
 3. **GitHub Pages:** Settings → Pages → Source **GitHub Actions**; add `OPENROUTER_API_KEY` secret if the workflow should run the LLM backend; re-run **Benchmark report (Pages)**. See [ci.md](ci.md).
 4. **Verify** [https://marfago-labs.github.io/ner-detector/](https://marfago-labs.github.io/ner-detector/) loads after deploy.
-5. **LinkedIn Featured:** paste title + body above; link repo and live report.
+5. **Secret Protection** + **Push protection** on all three NER repos.
+6. **LinkedIn Featured:** paste title + body above; link repo, live report, and dataset stats. Do **not** lead with legacy product names—this stack stands alone as open benchmark tooling.
+
+## License
+
+[MIT](../LICENSE)

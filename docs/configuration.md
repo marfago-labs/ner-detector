@@ -121,6 +121,21 @@ Requires `uv sync --extra llm` and `OPENROUTER_API_KEY` in `.env`.
 
 ## Environment
 
+Copy [`.env.example`](../.env.example) to `.env` in the repo root (gitignored). Variables load via `python-dotenv` at CLI/benchmark startup.
+
+### Which keys you need
+
+| Task | Required | Optional |
+|------|----------|----------|
+| Pattern / mock LLM / tests / `agent_smoke.py` | — | — |
+| ML backends (download from Hugging Face) | — | `HF_TOKEN` |
+| Live LLM (`provider: openrouter`) | `OPENROUTER_API_KEY` | `OPENROUTER_BASE_URL` |
+| Full benchmark with LLM runs (local) | `OPENROUTER_API_KEY` if config includes OpenRouter runs | `HF_TOKEN` |
+
+Obtain keys: [OpenRouter](https://openrouter.ai/keys), [Hugging Face](https://huggingface.co/settings/tokens).
+
+### Variables
+
 | Variable | Purpose |
 |----------|---------|
 | `NER_CONFIG_PATH` | Path to runtime profile YAML (default: `./config/ner.yaml`) |

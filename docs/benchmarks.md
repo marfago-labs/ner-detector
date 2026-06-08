@@ -2,7 +2,7 @@
 
 Compare **pattern**, **transformers**, and **gliner** backends on gold JSONL datasets. Produces `metrics.json` and `report.md`.
 
-Copy `.env.example` to `.env` (or use the repo `.env`) to set `TRANSFORMERS_VERBOSITY=error` and reduce Hugging Face load noise during ML benchmarks.
+Copy `.env.example` to `.env` (or use the repo `.env`) to set `TRANSFORMERS_VERBOSITY=error` and reduce Hugging Face load noise during ML benchmarks. **No keys** are required for `--pattern-only`; live LLM runs need `OPENROUTER_API_KEY` — see [configuration.md](configuration.md#which-keys-you-need).
 
 ## Quick run (no ML download)
 
@@ -55,11 +55,11 @@ Benchmark YAML may set `benchmark_root: ../ner-dataset` (default resolution when
 | Name | Description |
 |------|-------------|
 | `arxiv_gold` | 10 ML paper abstracts (models, datasets, benchmarks, metrics, methods) |
-| `synthetic_news_100` | Procedural news-style text (person, organization, location, date) |
-| `synthetic_blog_100` | Blog-style synthetic corpus |
-| `synthetic_scientific_100` | Scientific-style synthetic corpus |
-| `synthetic_transcript_100` | Transcript-style synthetic corpus |
-| `synthetic_mixed_100` | Mixed-domain synthetic corpus |
+| `synthetic_news_100` | LLM-generated news-style text (person, organization, location, date) |
+| `synthetic_blog_100` | LLM-generated blog-style corpus |
+| `synthetic_scientific_100` | LLM-generated scientific-style corpus |
+| `synthetic_transcript_100` | LLM-generated transcript-style corpus |
+| `synthetic_mixed_100` | LLM-generated mixed-domain corpus |
 
 `arxiv_gold` is built by the sibling repo **[ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator)** into **[ner-dataset](https://github.com/marfago-labs/ner-dataset)** by default:
 

@@ -1,0 +1,28 @@
+# ner-detector — NER evaluation platform (marfago-labs)
+
+> Pluggable NER backends + gold benchmarks. Primary docs for humans and coding agents.
+
+## Start here
+
+- docs/README.md — documentation index
+- docs/for-agents.md — monorepo layout, safety, agent task recipes
+- docs/portfolio.md — portfolio brief (maintainer)
+- README.md — quick start, limitations, benchmark trade-offs
+
+## Contracts
+
+- docs/configuration.md — `.env`, API keys (`OPENROUTER_API_KEY`, optional `HF_TOKEN`)
+- docs/benchmarks.md — metrics (Doc F1 primary), CLI flags
+- docs/adr/001-doc-f1-primary-metric.md — why Doc F1 is headline metric
+- benchmark/config/compare_backends.yaml — backend × dataset matrix
+- benchmark/config/label_maps.yaml — label normalization
+
+## Agent smoke (offline, no API)
+
+uv sync --extra dev
+uv run python scripts/agent_smoke.py
+
+## Sibling repos
+
+- https://github.com/marfago-labs/ner-gold-generator — gold generation (llms.txt)
+- https://github.com/marfago-labs/ner-dataset — committed JSONL + stats (llms.txt)
