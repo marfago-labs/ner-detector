@@ -13,8 +13,8 @@ from ner_detector.cli import main
 from ner_detector.config import (
     NerRuntimeConfig,
     load_ner_config,
-    resolve_ner_settings,
     resolve_label_preset,
+    resolve_ner_settings,
 )
 
 
@@ -103,9 +103,7 @@ def test_cli_show_config(capsys, tmp_path: Path) -> None:
 
 
 def test_ner_runtime_config_labels_from_string() -> None:
-    cfg = NerRuntimeConfig.model_validate(
-        {"labels": "person, company , city"}
-    )
+    cfg = NerRuntimeConfig.model_validate({"labels": "person, company , city"})
     assert cfg.labels == ["person", "company", "city"]
 
 

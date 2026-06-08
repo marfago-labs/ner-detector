@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from ner_detector.eval.repeat_stats import format_latency_mean_std
 from ner_detector.eval.runner import BenchmarkResult, RunResult
@@ -38,11 +37,7 @@ def render_markdown_report(benchmark: BenchmarkResult) -> str:
             "(model cache cleared each repeat; latency = mean ± std ms/example).\n"
         )
 
-    lat_header = (
-        "Latency mean±std (ms/ex)"
-        if benchmark.repeats > 1
-        else "Latency (ms/ex)"
-    )
+    lat_header = "Latency mean±std (ms/ex)" if benchmark.repeats > 1 else "Latency (ms/ex)"
     lines = [
         "# NER backend benchmark report",
         "",
@@ -137,9 +132,7 @@ def render_markdown_report(benchmark: BenchmarkResult) -> str:
         )
         for r in benchmark.results:
             if r.error:
-                lines.append(
-                    f"| {r.run_name} | {r.dataset} | {r.n_repeats} | ERROR | — | — |"
-                )
+                lines.append(f"| {r.run_name} | {r.dataset} | {r.n_repeats} | ERROR | — | — |")
                 continue
             f1_vals = ", ".join(_fmt_pct(v) for v in r.strict_f1_samples) or _fmt_pct(
                 r.summary.strict_prf()[2]

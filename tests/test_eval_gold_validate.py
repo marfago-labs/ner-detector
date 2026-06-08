@@ -124,7 +124,9 @@ def test_gliner_style_predictions_can_score_on_arxiv_gold() -> None:
 
 
 def test_benchmark_config_scopes_bert_away_from_arxiv(tmp_path: Path) -> None:
-    cfg_path = Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_backends.yaml"
+    cfg_path = (
+        Path(__file__).resolve().parents[1] / "benchmark" / "config" / "compare_backends.yaml"
+    )
     cfg = load_benchmark_config(cfg_path)
     bert = next(r for r in cfg.runs if r.name == "bert-conll")
     assert bert.datasets is not None

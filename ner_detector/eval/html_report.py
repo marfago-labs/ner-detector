@@ -6,23 +6,24 @@ import html
 from pathlib import Path
 
 from ner_detector.eval.confusion_html import CONFUSION_MATRIX_CSS, render_run_confusion_html
+from ner_detector.eval.curve_runner import ThresholdCurvesResult
+from ner_detector.eval.curve_svg import curve_chart_css, render_curves_section_html
+from ner_detector.eval.metrics import ScoreSummary
 from ner_detector.eval.radar_svg import (
     RADAR_CHART_CSS,
     build_run_color_map,
     render_radar_section_html,
 )
-from ner_detector.eval.metrics import ScoreSummary
-from ner_detector.eval.runner import BenchmarkResult, RunResult, load_benchmark_config
 from ner_detector.eval.repeat_stats import format_latency_mean_std
-from ner_detector.eval.curve_svg import curve_chart_css, render_curves_section_html
-from ner_detector.eval.curve_runner import ThresholdCurvesResult
 from ner_detector.eval.report_methodology import (
     render_ner_methodology_content,
     render_report_tabs,
     report_tab_styles,
 )
+from ner_detector.eval.runner import BenchmarkResult, RunResult, load_benchmark_config
 
-REPORT_PAGE_CSS = """
+REPORT_PAGE_CSS = (
+    """
     :root {
       --bg: #f4f5f7;
       --surface: #fff;
@@ -118,7 +119,9 @@ REPORT_PAGE_CSS = """
     .dataset-section .section-sub {
       color: var(--muted); font-size: 0.88rem; margin: 0 0 0.85rem;
     }
-""" + CONFUSION_MATRIX_CSS
+"""
+    + CONFUSION_MATRIX_CSS
+)
 
 LATENCY_REFERENCE_MS = 1000.0
 
@@ -369,18 +372,14 @@ def _leaderboard_table_rows(
     rows_data.sort(key=lambda x: (-x[1], x[0].run_name, x[0].dataset))
 
     lines: list[str] = []
-    rank = 0
-    for r, _f1 in rows_data:
-        rank += 1
+    for rank, (r, _f1) in enumerate(rows_data, start=1):
         rank_cls = "rank-1" if rank == 1 else ""
         _p, _rec, doc_f1 = r.summary.document_prf()
         _p2, _r2, sf1 = r.summary.strict_prf()
         stable_mark = ""
         if benchmark.repeats > 1 and not r.scores_reproducible:
             stable_mark = ' <span class="err" title="F1 varied across repeats">⚠</span>'
-        dataset_cell = (
-            f"<td>{html.escape(r.dataset)}</td>" if show_dataset else ""
-        )
+        dataset_cell = f"<td>{html.escape(r.dataset)}</td>" if show_dataset else ""
         lines.append(
             f"<tr class='{rank_cls}'>"
             f"<td>{rank}</td>"
@@ -397,9 +396,7 @@ def _leaderboard_table_rows(
     err_colspan = "4"
     for r in results:
         if r.error:
-            dataset_cell = (
-                f"<td>{html.escape(r.dataset)}</td>" if show_dataset else ""
-            )
+            dataset_cell = f"<td>{html.escape(r.dataset)}</td>" if show_dataset else ""
             lines.append(
                 "<tr>"
                 f"<td>—</td>"
@@ -482,9 +479,7 @@ def _radar_for_results(
     ok = [r for r in results if not r.error]
     errors = [f"{r.run_name}: {r.error}" for r in results if r.error]
     if not ok:
-        return (
-            f'<p class="notice">No successful runs for {html.escape(dataset_name)}.</p>'
-        )
+        return f'<p class="notice">No successful runs for {html.escape(dataset_name)}.</p>'
     leaderboard = [_run_to_leaderboard_row(r) for r in ok]
     return render_radar_section_html(
         leaderboard,

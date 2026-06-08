@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+from tests.conftest import FIXTURE_BENCHMARK_ROOT
+
 from ner_detector.eval.curve_runner import (
     run_threshold_curves,
     write_threshold_curves,
@@ -15,7 +17,6 @@ from ner_detector.eval.runner import BenchmarkResult, RunResult, run_benchmark
 from ner_detector.eval.threshold_curves import curves_for_run
 from ner_detector.eval.types import GoldEntity, GoldExample
 from ner_detector.types import DetectedEntity
-from tests.conftest import FIXTURE_BENCHMARK_ROOT
 
 
 def test_write_threshold_curves_artifacts(tmp_path: Path) -> None:

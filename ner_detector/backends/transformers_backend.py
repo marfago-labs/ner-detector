@@ -7,7 +7,6 @@ from ner_detector.backends.chunking import (
     chunk_offset,
     chunk_text,
     merge_overlapping_entities,
-    shift_entities,
 )
 from ner_detector.types import DetectedEntity
 

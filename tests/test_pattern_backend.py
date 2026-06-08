@@ -170,9 +170,7 @@ def test_cli_gliner_import_error(capsys, monkeypatch: pytest.MonkeyPatch) -> Non
     assert "gliner" in capsys.readouterr().err
 
 
-def test_cli_text_format_without_score(
-    capsys, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_text_format_without_score(capsys, monkeypatch: pytest.MonkeyPatch) -> None:
     from ner_detector.types import DetectedEntity
 
     fake = [DetectedEntity(text="Acme", label="ORG", score=None)]

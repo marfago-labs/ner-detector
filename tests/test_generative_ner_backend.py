@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 from unittest.mock import MagicMock, patch
 
 from ner_detector.backends.generative_ner_backend import (
@@ -31,7 +31,7 @@ class _FakePipeline:
     def __call__(self, prompt: str, **kwargs: object) -> list[dict]:
         del kwargs
         if "person" in prompt:
-            return [{"generated_text": '[["Jane Smith", "person"]]' }]
+            return [{"generated_text": '[["Jane Smith", "person"]]'}]
         return [{"generated_text": "[]"}]
 
 

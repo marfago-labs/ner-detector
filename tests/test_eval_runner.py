@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from tests.conftest import FIXTURE_BENCHMARK_ROOT
 
 from ner_detector.eval.loaders import load_dataset
 from ner_detector.eval.report import render_markdown_report, write_report
 from ner_detector.eval.runner import load_benchmark_config, run_benchmark
 from ner_detector.types import DetectedEntity
-from tests.conftest import FIXTURE_BENCHMARK_ROOT
 
 
 def test_load_marfago_gold() -> None:
@@ -167,9 +166,7 @@ def test_run_benchmark_repeats_latency_stats(tmp_path: Path) -> None:
 def test_load_benchmark_config_repeats(tmp_path: Path) -> None:
     cfg_path = tmp_path / "cfg.yaml"
     cfg_path.write_text(
-        "runs:\n  - name: p\n    backend: pattern\n"
-        "datasets:\n  - marfago_gold\n"
-        "repeats: 5\n",
+        "runs:\n  - name: p\n    backend: pattern\ndatasets:\n  - marfago_gold\nrepeats: 5\n",
         encoding="utf-8",
     )
     cfg = load_benchmark_config(cfg_path)

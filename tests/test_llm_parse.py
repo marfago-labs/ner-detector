@@ -48,10 +48,7 @@ def test_parse_skips_unaligned_surface() -> None:
 
 def test_parse_accepts_missing_text_key_with_empty_key() -> None:
     text = "GPT-4 was trained by OpenAI."
-    raw = (
-        '{"entities": [{"":"GPT-4","label":"model"},'
-        '{"text":"OpenAI","label":"organization"}]}'
-    )
+    raw = '{"entities": [{"":"GPT-4","label":"model"},{"text":"OpenAI","label":"organization"}]}'
     entities = parse_entities_response(
         raw,
         text,

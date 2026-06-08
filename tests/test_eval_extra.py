@@ -6,13 +6,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from tests.conftest import FIXTURE_BENCHMARK_ROOT
 
-from ner_detector.eval.metrics import prediction_to_span, score_example
+from ner_detector.eval.metrics import prediction_to_span
 from ner_detector.eval.report import render_markdown_report
 from ner_detector.eval.runner import RunResult, load_benchmark_config, run_benchmark
-from ner_detector.eval.types import GoldEntity, GoldExample
 from ner_detector.types import DetectedEntity
-from tests.conftest import FIXTURE_BENCHMARK_ROOT
 
 
 def test_prediction_to_span_text_search() -> None:
@@ -50,8 +49,7 @@ def test_runner_backend_failure(tmp_path: Path) -> None:
 def test_load_benchmark_config_ok(tmp_path: Path) -> None:
     path = tmp_path / "ok.yaml"
     path.write_text(
-        "runs:\n  - name: p\n    backend: pattern\n"
-        "datasets:\n  - marfago_gold\n",
+        "runs:\n  - name: p\n    backend: pattern\ndatasets:\n  - marfago_gold\n",
         encoding="utf-8",
     )
     cfg = load_benchmark_config(path)
@@ -134,8 +132,12 @@ def test_report_sorts_results() -> None:
     from ner_detector.eval.runner import BenchmarkResult
 
     br = BenchmarkResult(config_path=Path("c.yaml"), output_dir=Path("out"))
-    low = RunResult("low", "pattern", None, "d", ScoreSummary(strict=EntityScores(tp=0, fp=1, fn=1)))
-    high = RunResult("high", "pattern", None, "d", ScoreSummary(strict=EntityScores(tp=2, fp=0, fn=0)))
+    low = RunResult(
+        "low", "pattern", None, "d", ScoreSummary(strict=EntityScores(tp=0, fp=1, fn=1))
+    )
+    high = RunResult(
+        "high", "pattern", None, "d", ScoreSummary(strict=EntityScores(tp=2, fp=0, fn=0))
+    )
     br.results = [low, high]
     md = render_markdown_report(br)
     assert md.index("high") < md.index("low") or "high" in md

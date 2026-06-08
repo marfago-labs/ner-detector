@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import html
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 _MODEL_COLORS = (
     "#1d4ed8",
@@ -28,9 +29,7 @@ def build_run_color_map(run_names: list[str]) -> dict[str, str]:
         if key and key not in seen:
             ordered.append(key)
             seen.add(key)
-    return {
-        name: _MODEL_COLORS[i % len(_MODEL_COLORS)] for i, name in enumerate(ordered)
-    }
+    return {name: _MODEL_COLORS[i % len(_MODEL_COLORS)] for i, name in enumerate(ordered)}
 
 
 def color_for_run(run_name: str, color_map: dict[str, str] | None) -> str:
@@ -197,10 +196,7 @@ def render_radar_section_html(
     err_block = ""
     if errors:
         err_block = (
-            '<p class="notice">'
-            + "Skipped: "
-            + "; ".join(html.escape(e) for e in errors)
-            + "</p>"
+            '<p class="notice">' + "Skipped: " + "; ".join(html.escape(e) for e in errors) + "</p>"
         )
 
     title = html.escape(dataset_name)
@@ -216,15 +212,15 @@ def render_radar_section_html(
         <figure class="radar-figure">
           <svg class="radar-chart" viewBox="0 0 {size} {size}" width="{size}" height="{size}" role="img"
                aria-label="Radar chart for {title}">
-            {''.join(grid_lines)}
-            {''.join(spokes)}
-            {''.join(polygons)}
-            {''.join(axis_labels)}
+            {"".join(grid_lines)}
+            {"".join(spokes)}
+            {"".join(polygons)}
+            {"".join(axis_labels)}
           </svg>
         </figure>
         <div class="radar-side">
           <h3 class="radar-subhead">Legend (by area)</h3>
-          <ol class="radar-legend">{''.join(legend_items)}</ol>
+          <ol class="radar-legend">{"".join(legend_items)}</ol>
           <h3 class="radar-subhead">Axes</h3>
           <ul class="radar-axes-list">{axis_list}</ul>
         </div>

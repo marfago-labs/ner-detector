@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ner_detector.eval.loaders import load_gold_jsonl
 from ner_detector.eval.types import GoldEntity, GoldExample
 
 ARXIV_GOLD_LABELS = frozenset(
@@ -41,13 +40,9 @@ class GoldValidationReport:
     def raise_if_invalid(self) -> None:
         if self.ok:
             return
-        sample = "; ".join(
-            f"{issue.example_id}: {issue.message}" for issue in self.issues[:5]
-        )
+        sample = "; ".join(f"{issue.example_id}: {issue.message}" for issue in self.issues[:5])
         extra = f" (+{len(self.issues) - 5} more)" if len(self.issues) > 5 else ""
-        raise ValueError(
-            f"Invalid gold dataset {self.dataset_name!r}: {sample}{extra}"
-        )
+        raise ValueError(f"Invalid gold dataset {self.dataset_name!r}: {sample}{extra}")
 
 
 def _check_entity_bounds(example: GoldExample, entity: GoldEntity) -> GoldValidationIssue | None:

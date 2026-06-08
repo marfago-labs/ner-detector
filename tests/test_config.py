@@ -15,9 +15,7 @@ def test_load_model_config_missing_file(monkeypatch: pytest.MonkeyPatch) -> None
     assert load_model_config() == {}
 
 
-def test_load_model_config_non_dict_yaml(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_load_model_config_non_dict_yaml(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     path = tmp_path / "bad.yaml"
     path.write_text("- not a mapping\n", encoding="utf-8")
     monkeypatch.setattr(config_module, "_MODELS_PATH", path)

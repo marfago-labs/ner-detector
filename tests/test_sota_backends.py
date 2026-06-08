@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from ner_detector.backends.chunking import collect_chunked_entities
 from ner_detector.backends.generative_ner_backend import (
     GenerativeNerBackend,
@@ -64,7 +62,9 @@ def test_resolve_label_definitions_only_for_llm() -> None:
 def test_nuner_default_labels_when_none() -> None:
     model = MagicMock()
     model.predict_entities.return_value = []
-    with patch.dict("sys.modules", {"gliner": MagicMock(GLiNER=MagicMock(from_pretrained=lambda _m: model))}):
+    with patch.dict(
+        "sys.modules", {"gliner": MagicMock(GLiNER=MagicMock(from_pretrained=lambda _m: model))}
+    ):
         NunerBackend("m").detect("hello")
     labels_arg = model.predict_entities.call_args[0][1]
     assert "person" in labels_arg
@@ -107,8 +107,7 @@ def test_ner_config_inline_label_definitions(tmp_path: Path) -> None:
 
     path = tmp_path / "ner.yaml"
     path.write_text(
-        "backend: llm\nprovider: mock\n"
-        "label_definitions:\n  model: A named model\n",
+        "backend: llm\nprovider: mock\nlabel_definitions:\n  model: A named model\n",
         encoding="utf-8",
     )
     cfg = load_ner_config(str(path))

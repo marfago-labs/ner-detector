@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ner_detector.eval.metrics import match_prediction_to_gold
-from ner_detector.eval.metrics import gold_to_span
+from ner_detector.eval.metrics import gold_to_span, match_prediction_to_gold
 from ner_detector.eval.threshold_curves import (
     CurvePoint,
     auc_pr,
@@ -19,7 +18,7 @@ from ner_detector.eval.threshold_curves import (
     trapezoid_auc,
     uses_threshold_backend,
 )
-from ner_detector.eval.types import GoldEntity, GoldExample, EvalSpan
+from ner_detector.eval.types import EvalSpan, GoldEntity, GoldExample
 from ner_detector.types import DetectedEntity
 
 

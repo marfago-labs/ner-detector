@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ner_detector.eval.metrics import EntityScores, ScoreSummary
 from ner_detector.eval.report_methodology import (
     render_ner_methodology_content,
     render_report_tabs,
 )
-from ner_detector.eval.metrics import EntityScores, ScoreSummary
 from ner_detector.eval.runner import BenchmarkResult, RunResult
 
 
@@ -26,13 +26,9 @@ def test_render_report_tabs_structure() -> None:
 
 
 def test_render_ner_methodology_repeats_unstable(tmp_path: Path) -> None:
-    from ner_detector.eval.metrics import EntityScores, ScoreSummary
-    from ner_detector.eval.runner import RunResult
-
     cfg = tmp_path / "compare.yaml"
     cfg.write_text(
-        "runs:\n  - name: pattern\n    backend: pattern\n"
-        "datasets:\n  - marfago_gold\n",
+        "runs:\n  - name: pattern\n    backend: pattern\ndatasets:\n  - marfago_gold\n",
         encoding="utf-8",
     )
     br = BenchmarkResult(config_path=cfg, output_dir=tmp_path / "out", repeats=2)
