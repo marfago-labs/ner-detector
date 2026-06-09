@@ -1,10 +1,10 @@
 # Portfolio brief (recruiters & LinkedIn)
 
-Copy-paste snippets for profiles, posts, and project descriptions. Update benchmark numbers after each major run (see `benchmark/results/`).
+Copy-paste snippets for profiles, posts, and project descriptions. Update benchmark numbers after each major run (see `benchmark/results/`). Last refreshed: **2026-06-09** (`benchmark/results/latest/`).
 
 ## Elevator pitch (2 sentences)
 
-Open-source NER evaluation platform that compares regex, BERT, zero-shot GLiNER, NuNER, and LLM backends on shared gold data—with Doc F1, strict/relaxed span metrics, latency, and interactive benchmark reports. Built to answer *when an LLM is worth the latency cost* versus classical or zero-shot models.
+As an AI leader and Principal Engineer, I built this open-source NER evaluation platform to rigorously compare regex, BERT, zero-shot GLiNER, NuNER, and LLM backends on shared gold data. It provides enterprise-grade metrics (Doc F1, latency, interactive reports) to definitively answer *when an LLM is worth the latency cost* in production systems versus classical or zero-shot models.
 
 ## LinkedIn Featured — title
 
@@ -12,7 +12,7 @@ Open-source NER evaluation platform that compares regex, BERT, zero-shot GLiNER,
 
 ## LinkedIn Featured — body
 
-I built **ner-detector** as part of [marfago-labs](https://github.com/marfago-labs): a reproducible pipeline to compare Named Entity Recognition backends on the same gold datasets.
+In my work leading AI solutions, I constantly evaluate the trade-offs between model quality and production latency. I built **ner-detector** as part of [marfago-labs](https://github.com/marfago-labs) to provide a reproducible, enterprise-grade pipeline for comparing Named Entity Recognition backends on the same gold datasets.
 
 **What it does**
 
@@ -21,14 +21,16 @@ I built **ner-detector** as part of [marfago-labs](https://github.com/marfago-la
 - Engineering bar: ≥95% test coverage, typed Python, CI, auto-generated HTML benchmark reports
 - Agent-legible: schema-documented gold, YAML-driven benchmarks, [for-agents.md](for-agents.md) + offline `scripts/agent_smoke.py` for coding agents
 
-**Latest findings** (canonical gold, `compare_backends.yaml`)
+**Latest findings** (canonical gold, `compare_backends.yaml`, run 2026-06-09)
 
-| Setting | Best quality | Best latency |
-|---------|--------------|--------------|
-| Synthetic news (100 docs) | LLM ~84% Doc F1 (~7s/doc) | BERT ~73% Doc F1 (~80ms/doc) |
-| ML paper abstracts (salient gold) | LLM ~47% Doc F1 (~9s/doc) | GLiNER ~36–39% Doc F1 (~0.4s/doc) |
+| Setting | Best quality | Best latency (usable quality) |
+|---------|--------------|-------------------------------|
+| Synthetic news (100 docs) | NuNER ~78% Doc F1 (~0.8s/doc) | BERT ~73% Doc F1 (~135ms/doc) |
+| ML paper abstracts (salient gold, 10 docs) | GLiNER bi-large ~39% Doc F1 (~2.1s/doc) | GLiNER medium ~36% Doc F1 (~525ms/doc) |
 
-**Takeaway:** LLMs win on extraction quality where latency is acceptable; BERT remains the real-time baseline on standard entity types; GLiNER is the practical zero-shot option for custom schemas (e.g. scientific concepts) without retraining.
+**LLM note:** `llm-gpt-oss` (`openai/gpt-oss-120b:free`) returned **OpenRouter 401 (User not found)** in this run — refresh `OPENROUTER_API_KEY` and re-run for live LLM scores. Prior successful runs showed higher Doc F1 at ~7–9s/doc when the key was valid.
+
+**Takeaway:** On standard PER/ORG/LOC news gold, NuNER leads Doc F1 while BERT stays the fast baseline; on sparse scientific abstracts, zero-shot GLiNER is the practical choice without retraining. LLM quality/latency trade-offs need a valid OpenRouter key to measure in the harness.
 
 **Ecosystem:** [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) → [ner-dataset](https://github.com/marfago-labs/ner-dataset) → **ner-detector** (this repo).
 
@@ -46,7 +48,7 @@ Prefer "agent-legible" or "documentation-first for human and AI contributors" ov
 
 ## Short post hook (optional)
 
-> Shipped an open-source NER benchmark harness: same gold, four paradigms (regex / BERT / GLiNER / LLM), full latency + F1 report. Spoiler: LLMs are best on quality, BERT on speed, GLiNER on custom labels without training. Code + methodology in the repo.
+> In enterprise AI, code is becoming a commodity, but rigorous evaluation is not. I shipped an open-source NER benchmark harness to measure the real trade-offs between regex, BERT, GLiNER, and LLMs. Spoiler: LLMs win on quality, BERT on speed, and GLiNER on custom labels without training. Code + methodology in the repo.
 
 ## Publish checklist
 

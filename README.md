@@ -10,11 +10,12 @@ Part of [marfago-labs](https://github.com/marfago-labs). MIT licensed. Pairs wit
 
 ## Architecture & Benchmark Trade-offs
 
-Evidence-driven comparison on shared gold data (`synthetic_news_100`, salient-entity `arxiv_gold`). Latest run: `compare_backends.yaml`, Doc F1 as primary metric.
+Evidence-driven comparison on shared gold data (`synthetic_news_100`, salient-entity `arxiv_gold`). Latest local run: `compare_backends.yaml` (2026-06-09), Doc F1 as primary metric. Full tables: `benchmark/results/latest/report.md`.
 
-- **LLMs (`openai/gpt-oss-120b:free` via OpenRouter):** Highest Doc F1 (~84% synthetic news, ~47% sparse arxiv abstracts). Latency ~7–9 s/document — best for offline or batched extraction when quality dominates.
-- **Transformers (`dslim/bert-base-NER`):** ~80 ms/document, ~73% Doc F1 on standard PER/ORG/LOC-style gold — best real-time baseline on fixed schemas.
-- **Zero-shot GLiNER:** Custom labels without retraining (~36–39% Doc F1 on arxiv scientific types, ~200–400 ms/doc) — practical middle ground for domain-specific entity types.
+- **NuNER (`numind/NuNER_Zero`):** ~78% Doc F1 on synthetic news (~0.8 s/doc) — best measured quality on standard entity types in the latest run.
+- **Transformers (`dslim/bert-base-NER`):** ~135 ms/document, ~73% Doc F1 on synthetic news — best real-time baseline on fixed PER/ORG/LOC schemas.
+- **Zero-shot GLiNER:** Custom labels without retraining (~36–39% Doc F1 on arxiv scientific types, ~0.5–2 s/doc depending on model) — practical option for domain-specific entity types.
+- **LLMs (`openai/gpt-oss-120b:free` via OpenRouter):** not scored in the 2026-06-09 run (OpenRouter 401 — check `OPENROUTER_API_KEY`). Re-run after fixing the key for LLM vs classical comparison.
 
 ## Quick start
 
