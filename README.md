@@ -2,7 +2,7 @@
 
 Named entity recognition (NER) with **pluggable backends**: deterministic regex (`pattern`), fixed-label BERT (`transformers`), zero-shot GLiNER (`gliner`), NuNER (`nuner`), and chat LLM (`llm` via OpenRouter or mock).
 
-**Benchmark report:** [GitHub Pages](https://marfago-labs.github.io/ner-detector/) · [Run locally](docs/benchmarks.md) · [Portfolio brief](docs/portfolio.md)
+**Benchmark report:** [GitHub Pages](https://marfago-labs.github.io/ner-detector/) · [Run locally](docs/benchmarks.md)
 
 Part of [marfago-labs](https://github.com/marfago-labs). MIT licensed. Pairs with [ner-gold-generator](https://github.com/marfago-labs/ner-gold-generator) and [ner-dataset](https://github.com/marfago-labs/ner-dataset).
 
@@ -156,7 +156,6 @@ GitHub Actions:
 | [docs/models.md](docs/models.md) | Model picks (HF / GitHub) |
 | [docs/benchmarks.md](docs/benchmarks.md) | Compare backends on gold data |
 | [docs/ci.md](docs/ci.md) | GitHub Actions, Pages, variables/secrets |
-| [docs/portfolio.md](docs/portfolio.md) | Ecosystem pitch and publish checklist |
 | [docs/for-agents.md](docs/for-agents.md) | Coding-agent tasks, contracts, smoke workflow |
 | [docs/adr/001-doc-f1-primary-metric.md](docs/adr/001-doc-f1-primary-metric.md) | Why Doc F1 is the primary metric |
 
