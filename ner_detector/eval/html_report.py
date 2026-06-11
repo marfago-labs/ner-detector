@@ -1,4 +1,4 @@
-"""HTML benchmark report — text-compressor style (light theme, static SVG radar)."""
+"""HTML benchmark report — marfago-labs theme (cream/teal, static SVG radar)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from pathlib import Path
 from ner_detector.eval.confusion_html import CONFUSION_MATRIX_CSS, render_run_confusion_html
 from ner_detector.eval.curve_runner import ThresholdCurvesResult
 from ner_detector.eval.curve_svg import curve_chart_css, render_curves_section_html
+from ner_detector.eval.lab_chrome import load_lab_theme_css, site_footer, site_header
 from ner_detector.eval.metrics import ScoreSummary
 from ner_detector.eval.radar_svg import (
     RADAR_CHART_CSS,
@@ -22,104 +23,13 @@ from ner_detector.eval.report_methodology import (
 )
 from ner_detector.eval.runner import BenchmarkResult, RunResult, load_benchmark_config
 
-REPORT_PAGE_CSS = (
+REPORT_PAGE_EXTRA_CSS = (
     """
-    :root {
-      --bg: #f4f5f7;
-      --surface: #fff;
-      --text: #14181c;
-      --muted: #5f6b7a;
-      --border: #dde2e8;
-      --accent: #1d4ed8;
-      --rank1: #ecfdf5;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.45;
-    }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
-    header.page {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem 1.75rem;
-      margin-bottom: 1.25rem;
-    }
-    header.page h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
-    header.page .sub { color: var(--muted); font-size: 0.92rem; margin: 0.35rem 0 0; }
-    .notice {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 0.65rem 0.9rem;
-      font-size: 0.88rem;
-      margin-bottom: 1rem;
-    }
-    section.block { margin-bottom: 1.5rem; }
-    section.block h2 { font-size: 1.05rem; margin: 0 0 0.65rem; font-weight: 600; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      font-size: 0.88rem;
-    }
-    th, td {
-      padding: 0.55rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-    th {
-      background: #f8fafc;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 600;
-    }
-    tr:last-child td { border-bottom: none; }
-    tr.rank-1 { background: var(--rank1); }
-    footer {
-      margin-top: 1.5rem;
-      text-align: center;
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-    th[title] { cursor: help; border-bottom: 1px dotted var(--border); }
     .report-tabs section.block { margin-bottom: 1.25rem; }
     .report-tabs section.block:last-child { margin-bottom: 0; }
     .report-tabs .notice { margin-bottom: 0.75rem; }
-    .report-index {
-      display: flex; flex-wrap: wrap; gap: 0.45rem 0.65rem;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;
-    }
-    .report-index a {
-      font-size: 0.84rem; color: var(--accent); text-decoration: none;
-      padding: 0.2rem 0.55rem; border-radius: 999px; background: #eff6ff;
-    }
-    .report-index a:hover { text-decoration: underline; }
-    .report-index .index-label {
-      width: 100%; margin: 0 0 0.15rem; font-size: 0.78rem; font-weight: 600;
-      color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .dataset-section {
-      scroll-margin-top: 1rem;
-      padding-top: 0.25rem;
-      border-top: 1px solid var(--border);
-      margin-top: 1.75rem;
-    }
-    .dataset-section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
-    .dataset-section > h2 { font-size: 1.15rem; margin: 0 0 0.35rem; }
-    .dataset-section .section-sub {
-      color: var(--muted); font-size: 0.88rem; margin: 0 0 0.85rem;
-    }
-"""
+    th[title] { cursor: help; border-bottom: 1px dotted var(--border); }
+    """
     + CONFUSION_MATRIX_CSS
 )
 
@@ -650,6 +560,8 @@ def render_html_report(
         curves_html=curves_html,
     )
     has_curves = curves_html is not None
+    theme_css = load_lab_theme_css()
+    footer_note = "ner-detector · benchmark/run_benchmark.py"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -658,15 +570,16 @@ def render_html_report(
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NER backend benchmark — ner-detector</title>
   <style>
-    {REPORT_PAGE_CSS}
+{theme_css}
+    {REPORT_PAGE_EXTRA_CSS}
     {report_tab_styles("ner-bench", has_curves=has_curves)}
     {RADAR_CHART_CSS}
     {curve_chart_css() if has_curves else ""}
-    .err {{ color: #b91c1c; font-size: 0.84rem; }}
   </style>
 </head>
 <body>
-  <div class="wrap">
+  {site_header(active="projects")}
+  <main class="main">
     <header class="page">
       <h1>NER backend benchmark</h1>
       <p class="sub">Config <code>{config_path}</code></p>
@@ -675,9 +588,8 @@ def render_html_report(
     </header>
 
     {tabbed_body}
-
-    <footer>ner-detector · benchmark/run_benchmark.py</footer>
-  </div>
+  </main>
+  {site_footer(note=footer_note)}
 </body>
 </html>
 """

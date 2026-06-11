@@ -1,0 +1,401 @@
+/* marfago-labs shared theme — org site, ner-dataset stats, ner-detector reports */
+:root {
+  --bg: #f8f6f2;
+  --surface: #fffef9;
+  --text: #1a1a18;
+  --muted: #5c5a54;
+  --accent: #0d4f4f;
+  --accent-hover: #0a3d3d;
+  --border: #e4e0d6;
+  --code-bg: #eeebe3;
+  --highlight: #d4ede8;
+  --notice-bg: #f5f0e6;
+  --notice-border: #e4d9c4;
+  --wide: 56rem;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 18px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: 2.25rem;
+  margin: 0 0 0.75rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin: 2rem 0 0.75rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+code {
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.lead {
+  font-size: 1.05rem;
+  color: var(--muted);
+}
+
+/* Site chrome */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.site-header .wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.site-header .brand {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.site-header .brand:hover {
+  color: var(--accent);
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.site-header .nav-link {
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.site-header .nav-link:hover,
+.site-header .nav-link.active {
+  color: var(--accent);
+}
+
+.site-footer {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
+  padding: 2rem 0 2.5rem;
+}
+
+.site-footer .wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.site-footer .small {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.main {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.page-title {
+  margin-bottom: 0.25rem;
+}
+
+.page-sub {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0 0 1.5rem;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+
+th,
+td {
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: var(--code-bg);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tr.total td {
+  border-top: 2px solid var(--border);
+}
+
+tr.rank-1 {
+  background: var(--highlight);
+}
+
+/* Cards & datasets */
+.card,
+.dataset {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.notice {
+  background: var(--notice-bg);
+  border: 1px solid var(--notice-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+
+.nav-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.nav-inline a {
+  text-decoration: none;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.kpi {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  text-align: center;
+}
+
+.kpi .value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.kpi .name {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+table.bars td.bar span {
+  display: block;
+  height: 0.55rem;
+  background: var(--accent);
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+/* Report-specific */
+header.page {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+header.page h1 {
+  font-size: 1.45rem;
+  margin: 0;
+}
+
+header.page .sub {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0.35rem 0 0;
+}
+
+section.block {
+  margin-bottom: 1.5rem;
+}
+
+section.block h2,
+section.block h3 {
+  font-family: var(--font-serif);
+}
+
+.report-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.report-index a {
+  font-size: 0.84rem;
+  text-decoration: none;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--highlight);
+}
+
+.report-index .index-label {
+  width: 100%;
+  margin: 0 0 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dataset-section {
+  scroll-margin-top: 1rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1.75rem;
+}
+
+.dataset-section:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.dataset-section .section-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 0.85rem;
+}
+
+.err {
+  color: #9b2c2c;
+  font-size: 0.84rem;
+}
+
+table.summary,
+table.quality {
+  margin-bottom: 1.5rem;
+}
+
+table.quality {
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+}
+
+.quality-note {
+  font-size: 0.82rem;
+  margin: 0 0 1rem;
+}
+
+.meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0.35rem 0;
+}
+
+table.bars {
+  font-size: 0.88rem;
+}
+
+table.bars th {
+  font-weight: 500;
+}
+
+table.bars td {
+  padding: 0.35rem 0.5rem;
+  vertical-align: middle;
+}
+
+table.bars .bar {
+  width: 40%;
+}

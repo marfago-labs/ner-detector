@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ner_detector.backends.chunking import (
     _DEFAULT_CHUNK_OVERLAP,
     chunk_offset,
@@ -26,7 +28,7 @@ class TransformersBackend:
     ) -> None:
         self.model_id = model_id
         self.max_chunk_chars = max_chunk_chars
-        self._pipeline = None
+        self._pipeline: Any = None
 
     def _ensure_loaded(self) -> None:
         if self._pipeline is not None:
@@ -35,7 +37,7 @@ class TransformersBackend:
         from transformers import pipeline
 
         device = 0 if torch.cuda.is_available() else -1
-        self._pipeline = pipeline(
+        self._pipeline = pipeline(  # type: ignore[call-overload]
             "ner",
             model=self.model_id,
             tokenizer=self.model_id,

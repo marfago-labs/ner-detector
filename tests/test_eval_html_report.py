@@ -181,7 +181,9 @@ def test_render_radar_section_svg() -> None:
 def test_render_html_light_theme_no_chartjs() -> None:
     html = render_html_report(_sample_benchmark())
     assert "chart.js" not in html.lower()
-    assert "--bg: #f4f5f7" in html
+    assert "--bg: #f8f6f2" in html
+    assert "site-header" in html
+    assert "marfago labs" in html
     assert 'class="radar-chart"' in html
     assert 'id="global"' in html
     assert 'id="dataset-marfago-gold"' in html

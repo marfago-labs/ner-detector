@@ -5,102 +5,413 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NER backend benchmark — ner-detector</title>
   <style>
-    
-    :root {
-      --bg: #f4f5f7;
-      --surface: #fff;
-      --text: #14181c;
-      --muted: #5f6b7a;
-      --border: #dde2e8;
-      --accent: #1d4ed8;
-      --rank1: #ecfdf5;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.45;
-    }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
-    header.page {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem 1.75rem;
-      margin-bottom: 1.25rem;
-    }
-    header.page h1 { margin: 0; font-size: 1.45rem; font-weight: 600; }
-    header.page .sub { color: var(--muted); font-size: 0.92rem; margin: 0.35rem 0 0; }
-    .notice {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 0.65rem 0.9rem;
-      font-size: 0.88rem;
-      margin-bottom: 1rem;
-    }
-    section.block { margin-bottom: 1.5rem; }
-    section.block h2 { font-size: 1.05rem; margin: 0 0 0.65rem; font-weight: 600; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      font-size: 0.88rem;
-    }
-    th, td {
-      padding: 0.55rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-    th {
-      background: #f8fafc;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 600;
-    }
-    tr:last-child td { border-bottom: none; }
-    tr.rank-1 { background: var(--rank1); }
-    footer {
-      margin-top: 1.5rem;
-      text-align: center;
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-    th[title] { cursor: help; border-bottom: 1px dotted var(--border); }
+/* marfago-labs shared theme — org site, ner-dataset stats, ner-detector reports */
+:root {
+  --bg: #f8f6f2;
+  --surface: #fffef9;
+  --text: #1a1a18;
+  --muted: #5c5a54;
+  --accent: #0d4f4f;
+  --accent-hover: #0a3d3d;
+  --border: #e4e0d6;
+  --code-bg: #eeebe3;
+  --highlight: #d4ede8;
+  --notice-bg: #f5f0e6;
+  --notice-border: #e4d9c4;
+  --wide: 56rem;
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 18px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: 2.25rem;
+  margin: 0 0 0.75rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin: 2rem 0 0.75rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+code {
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.lead {
+  font-size: 1.05rem;
+  color: var(--muted);
+}
+
+/* Site chrome */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.site-header .wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.site-header .brand {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.site-header .brand:hover {
+  color: var(--accent);
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.site-header .nav-link {
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.site-header .nav-link:hover,
+.site-header .nav-link.active {
+  color: var(--accent);
+}
+
+.site-footer {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
+  padding: 2rem 0 2.5rem;
+}
+
+.site-footer .wrap {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.site-footer .small {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.main {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.page-title {
+  margin-bottom: 0.25rem;
+}
+
+.page-sub {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0 0 1.5rem;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+
+th,
+td {
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: var(--code-bg);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tr.total td {
+  border-top: 2px solid var(--border);
+}
+
+tr.rank-1 {
+  background: var(--highlight);
+}
+
+/* Cards & datasets */
+.card,
+.dataset {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.notice {
+  background: var(--notice-bg);
+  border: 1px solid var(--notice-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+
+.nav-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.nav-inline a {
+  text-decoration: none;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.kpi {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  text-align: center;
+}
+
+.kpi .value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.kpi .name {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+table.bars td.bar span {
+  display: block;
+  height: 0.55rem;
+  background: var(--accent);
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+/* Report-specific */
+header.page {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+header.page h1 {
+  font-size: 1.45rem;
+  margin: 0;
+}
+
+header.page .sub {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0.35rem 0 0;
+}
+
+section.block {
+  margin-bottom: 1.5rem;
+}
+
+section.block h2,
+section.block h3 {
+  font-family: var(--font-serif);
+}
+
+.report-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.report-index a {
+  font-size: 0.84rem;
+  text-decoration: none;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--highlight);
+}
+
+.report-index .index-label {
+  width: 100%;
+  margin: 0 0 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dataset-section {
+  scroll-margin-top: 1rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border);
+  margin-top: 1.75rem;
+}
+
+.dataset-section:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.dataset-section .section-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 0.85rem;
+}
+
+.err {
+  color: #9b2c2c;
+  font-size: 0.84rem;
+}
+
+table.summary,
+table.quality {
+  margin-bottom: 1.5rem;
+}
+
+table.quality {
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+}
+
+.quality-note {
+  font-size: 0.82rem;
+  margin: 0 0 1rem;
+}
+
+.meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0.35rem 0;
+}
+
+table.bars {
+  font-size: 0.88rem;
+}
+
+table.bars th {
+  font-weight: 500;
+}
+
+table.bars td {
+  padding: 0.35rem 0.5rem;
+  vertical-align: middle;
+}
+
+table.bars .bar {
+  width: 40%;
+}
+
+
     .report-tabs section.block { margin-bottom: 1.25rem; }
     .report-tabs section.block:last-child { margin-bottom: 0; }
     .report-tabs .notice { margin-bottom: 0.75rem; }
-    .report-index {
-      display: flex; flex-wrap: wrap; gap: 0.45rem 0.65rem;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;
-    }
-    .report-index a {
-      font-size: 0.84rem; color: var(--accent); text-decoration: none;
-      padding: 0.2rem 0.55rem; border-radius: 999px; background: #eff6ff;
-    }
-    .report-index a:hover { text-decoration: underline; }
-    .report-index .index-label {
-      width: 100%; margin: 0 0 0.15rem; font-size: 0.78rem; font-weight: 600;
-      color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .dataset-section {
-      scroll-margin-top: 1rem;
-      padding-top: 0.25rem;
-      border-top: 1px solid var(--border);
-      margin-top: 1.75rem;
-    }
-    .dataset-section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
-    .dataset-section > h2 { font-size: 1.15rem; margin: 0 0 0.35rem; }
-    .dataset-section .section-sub {
-      color: var(--muted); font-size: 0.88rem; margin: 0 0 0.85rem;
-    }
+    th[title] { cursor: help; border-bottom: 1px dotted var(--border); }
 
     .confusion-section { margin-top: 1.25rem; }
     .confusion-section h3 { font-size: 1rem; margin: 0 0 0.5rem; }
@@ -144,7 +455,7 @@
       background: #fef2f2;
     }
 
-    
+
     .report-tabs {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -243,8 +554,8 @@
     #ner-bench-results:checked ~ .tab-panel-results { display: block; }
     #ner-bench-methodology:checked ~ .tab-panel-methodology { display: block; }
 
-    
-    
+
+
     .radar-section { margin-bottom: 1.5rem; }
     .radar-note {
       font-size: 0.84rem; color: var(--muted); margin: 0 0 0.85rem; line-height: 1.45;
@@ -275,39 +586,44 @@
     }
     .radar-axes-list { margin: 0; padding-left: 1.15rem; font-size: 0.82rem; color: var(--muted); }
 
-    
-    .err { color: #b91c1c; font-size: 0.84rem; }
+
   </style>
 </head>
 <body>
+  <header class="site-header">
   <div class="wrap">
+    <a class="brand" href="https://marfago-labs.github.io/">marfago labs</a>
+    <nav aria-label="Main"><a class="nav-link" href="https://marfago-labs.github.io/">Home</a><a class="nav-link" href="https://marfago-labs.github.io/blog/">Blog</a><a class="nav-link active" href="https://marfago-labs.github.io/projects/">Projects</a><a class="nav-link" href="https://marfago-labs.github.io/about/">About</a></nav>
+  </div>
+</header>
+  <main class="main">
     <header class="page">
       <h1>NER backend benchmark</h1>
       <p class="sub">Config <code>benchmark\config\compare_backends.yaml</code></p>
       <p class="sub">Output <code>benchmark\results\run-20260606T131135Z</code></p>
-      
+
     </header>
 
-    
+
     <div class="report-tabs">
       <input type="radio" name="ner-bench-tab" id="ner-bench-results" class="tab-input" checked>
-      
+
       <input type="radio" name="ner-bench-tab" id="ner-bench-methodology" class="tab-input">
       <nav class="tab-bar" aria-label="Report sections">
         <label for="ner-bench-results">Results</label>
-        
+
         <label for="ner-bench-methodology">Metrics &amp; methodology</label>
       </nav>
       <div class="tab-panel tab-panel-results">
-    
-    
-    
+
+
+
     <nav class="report-index" aria-label="Report sections">
       <p class="index-label">Sections</p>
       <a href="#global">Global (all datasets)</a><a href="#dataset-arxiv-gold">arxiv_gold</a><a href="#dataset-synthetic-news-100">synthetic_news_100</a>
     </nav>
-    
-    
+
+
     <section class="dataset-section" id="global">
       <h2>Global — all datasets</h2>
       <p class="section-sub">Aggregated Document/Strict F1 and latency across
@@ -315,13 +631,13 @@
       <section class="block">
         <h3>Leaderboard</h3>
         <p class="notice">Ranked by Document-level string overlap F1. Green row = best overall.</p>
-        
+
       <table>
         <thead>
           <tr>
             <th>#</th>
             <th>Run</th>
-            
+
             <th>Backend</th>
             <th>Model</th>
             <th title="Document-level unique string match">Doc F1</th>
@@ -331,16 +647,16 @@
         </thead>
         <tbody><tr class='rank-1'><td>1</td><td><code>llm-gpt-oss</code></td><td>llm</td><td><code>openai/gpt-oss-120b:free</code></td><td>80.7%</td><td>80.6%</td><td>7100.93 ms</td></tr><tr class=''><td>2</td><td><code>nuner-zero</code></td><td>nuner</td><td><code>numind/NuNER_Zero</code></td><td>74.3%</td><td>72.4%</td><td>1768.16 ms</td></tr><tr class=''><td>3</td><td><code>bert-conll</code></td><td>transformers</td><td><code>dslim/bert-base-NER</code></td><td>72.5%</td><td>72.5%</td><td>79.60 ms</td></tr><tr class=''><td>4</td><td><code>gliner-medium</code></td><td>gliner</td><td><code>urchade/gliner_medium-v2.1</code></td><td>67.3%</td><td>65.9%</td><td>212.40 ms</td></tr><tr class=''><td>5</td><td><code>gliner-bi-large</code></td><td>gliner</td><td><code>knowledgator/gliner-bi-large-v2.0</code></td><td>57.1%</td><td>55.2%</td><td>391.60 ms</td></tr><tr class=''><td>6</td><td><code>llm-mock</code></td><td>llm</td><td><code>mock/ner</code></td><td>31.0%</td><td>31.0%</td><td>0.21 ms</td></tr><tr class=''><td>7</td><td><code>pattern</code></td><td>pattern</td><td><code>—</code></td><td>22.7%</td><td>21.8%</td><td>0.19 ms</td></tr></tbody>
       </table>
-    
+
       </section>
-      
+
     <section class="block radar-section">
       <h2>Backend radar — Global (all datasets)</h2>
       <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
       Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
       Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
       not a ranking metric.</p>
-      
+
       <div class="radar-layout">
         <figure class="radar-figure">
           <svg class="radar-chart" viewBox="0 0 420 420" width="420" height="420" role="img"
@@ -359,18 +675,18 @@
         </div>
       </div>
     </section>
-    
-      
+
+
     <section class="block confusion-section">
       <h3>Label confusion matrices</h3>
       <p class="confusion-note">Rows = gold labels; columns = predicted labels.
       Diagonal (green) = correct label at a paired span. Column <code>∅ missed</code>
       = gold entity with no paired prediction. Row <code>∅ spurious</code>
       = prediction with no paired gold span.</p>
-      
+
     <div class="confusion-run">
       <h4><code>llm-gpt-oss</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 723</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -385,8 +701,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 732</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -401,12 +717,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>bert-conll</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 565</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -421,8 +737,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 593</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -437,12 +753,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>nuner-zero</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 774</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -457,8 +773,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 792</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -473,12 +789,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>gliner-medium</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 885</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -493,8 +809,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 904</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -509,12 +825,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>gliner-bi-large</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 612</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -529,8 +845,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 617</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -545,12 +861,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>llm-mock</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 702</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -565,8 +881,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 739</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -581,12 +897,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>pattern</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 1007</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -601,8 +917,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 1056</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -617,13 +933,13 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     </section>
-    
+
     </section>
-    
+
     <section class="dataset-section" id="dataset-arxiv-gold">
       <h2>arxiv_gold</h2>
       <p class="section-sub"><strong>10</strong> examples,
@@ -631,13 +947,13 @@
       <section class="block">
         <h3>Leaderboard</h3>
         <p class="notice">Ranked by Document-level string overlap F1 on this dataset only. Green row = best for this corpus.</p>
-        
+
       <table>
         <thead>
           <tr>
             <th>#</th>
             <th>Run</th>
-            
+
             <th>Backend</th>
             <th>Model</th>
             <th title="Document-level unique string match">Doc F1</th>
@@ -647,16 +963,16 @@
         </thead>
         <tbody><tr class='rank-1'><td>1</td><td><code>llm-gpt-oss</code></td><td>llm</td><td><code>openai/gpt-oss-120b:free</code></td><td>47.2%</td><td>45.3%</td><td>9052.61 ms</td></tr><tr class=''><td>2</td><td><code>gliner-bi-large</code></td><td>gliner</td><td><code>knowledgator/gliner-bi-large-v2.0</code></td><td>39.1%</td><td>27.5%</td><td>664.38 ms</td></tr><tr class=''><td>3</td><td><code>gliner-medium</code></td><td>gliner</td><td><code>urchade/gliner_medium-v2.1</code></td><td>36.2%</td><td>27.1%</td><td>364.31 ms</td></tr><tr class=''><td>4</td><td><code>nuner-zero</code></td><td>nuner</td><td><code>numind/NuNER_Zero</code></td><td>32.7%</td><td>22.6%</td><td>840.31 ms</td></tr><tr class=''><td>5</td><td><code>llm-mock</code></td><td>llm</td><td><code>mock/ner</code></td><td>2.9%</td><td>2.9%</td><td>0.21 ms</td></tr><tr class=''><td>6</td><td><code>pattern</code></td><td>pattern</td><td><code>—</code></td><td>2.2%</td><td>1.7%</td><td>0.72 ms</td></tr></tbody>
       </table>
-    
+
       </section>
-      
+
     <section class="block radar-section">
       <h2>Backend radar — arxiv_gold</h2>
       <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
       Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
       Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
       not a ranking metric.</p>
-      
+
       <div class="radar-layout">
         <figure class="radar-figure">
           <svg class="radar-chart" viewBox="0 0 420 420" width="420" height="420" role="img"
@@ -675,18 +991,18 @@
         </div>
       </div>
     </section>
-    
-      
+
+
     <section class="block confusion-section">
       <h3>Label confusion matrices</h3>
       <p class="confusion-note">Rows = gold labels; columns = predicted labels.
       Diagonal (green) = correct label at a paired span. Column <code>∅ missed</code>
       = gold entity with no paired prediction. Row <code>∅ spurious</code>
       = prediction with no paired gold span.</p>
-      
+
     <div class="confusion-run">
       <h4><code>llm-gpt-oss</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 72</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -701,8 +1017,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 77</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -717,12 +1033,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>gliner-bi-large</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 85</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -737,8 +1053,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 90</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -753,12 +1069,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>gliner-medium</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 97</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -773,8 +1089,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 100</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -789,12 +1105,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>nuner-zero</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 103</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -809,8 +1125,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 107</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -825,12 +1141,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>llm-mock</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 66</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -845,8 +1161,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 69</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -861,12 +1177,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>pattern</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 107</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -881,8 +1197,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 114</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -897,13 +1213,13 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     </section>
-    
+
     </section>
-    
+
     <section class="dataset-section" id="dataset-synthetic-news-100">
       <h2>synthetic_news_100</h2>
       <p class="section-sub"><strong>100</strong> examples,
@@ -911,13 +1227,13 @@
       <section class="block">
         <h3>Leaderboard</h3>
         <p class="notice">Ranked by Document-level string overlap F1 on this dataset only. Green row = best for this corpus.</p>
-        
+
       <table>
         <thead>
           <tr>
             <th>#</th>
             <th>Run</th>
-            
+
             <th>Backend</th>
             <th>Model</th>
             <th title="Document-level unique string match">Doc F1</th>
@@ -927,16 +1243,16 @@
         </thead>
         <tbody><tr class='rank-1'><td>1</td><td><code>llm-gpt-oss</code></td><td>llm</td><td><code>openai/gpt-oss-120b:free</code></td><td>83.9%</td><td>83.9%</td><td>6905.76 ms</td></tr><tr class=''><td>2</td><td><code>nuner-zero</code></td><td>nuner</td><td><code>numind/NuNER_Zero</code></td><td>78.0%</td><td>77.9%</td><td>1860.95 ms</td></tr><tr class=''><td>3</td><td><code>bert-conll</code></td><td>transformers</td><td><code>dslim/bert-base-NER</code></td><td>72.5%</td><td>72.5%</td><td>79.60 ms</td></tr><tr class=''><td>4</td><td><code>gliner-medium</code></td><td>gliner</td><td><code>urchade/gliner_medium-v2.1</code></td><td>69.6%</td><td>69.6%</td><td>197.21 ms</td></tr><tr class=''><td>5</td><td><code>gliner-bi-large</code></td><td>gliner</td><td><code>knowledgator/gliner-bi-large-v2.0</code></td><td>59.2%</td><td>59.2%</td><td>364.32 ms</td></tr><tr class=''><td>6</td><td><code>llm-mock</code></td><td>llm</td><td><code>mock/ner</code></td><td>33.1%</td><td>33.1%</td><td>0.21 ms</td></tr><tr class=''><td>7</td><td><code>pattern</code></td><td>pattern</td><td><code>—</code></td><td>24.2%</td><td>23.9%</td><td>0.14 ms</td></tr></tbody>
       </table>
-    
+
       </section>
-      
+
     <section class="block radar-section">
       <h2>Backend radar — synthetic_news_100</h2>
       <p class="radar-note">Quality axes (F1, precision, recall) are 0–1 (higher is better).
       Speed = 1 − (ms/example ÷ 1000), clamped 0–1 — so 1 s/example scores 0 on Speed.
       Absolute latency is also in the leaderboard table. Polygon area is a quick composite index —
       not a ranking metric.</p>
-      
+
       <div class="radar-layout">
         <figure class="radar-figure">
           <svg class="radar-chart" viewBox="0 0 420 420" width="420" height="420" role="img"
@@ -955,18 +1271,18 @@
         </div>
       </div>
     </section>
-    
-      
+
+
     <section class="block confusion-section">
       <h3>Label confusion matrices</h3>
       <p class="confusion-note">Rows = gold labels; columns = predicted labels.
       Diagonal (green) = correct label at a paired span. Column <code>∅ missed</code>
       = gold entity with no paired prediction. Row <code>∅ spurious</code>
       = prediction with no paired gold span.</p>
-      
+
     <div class="confusion-run">
       <h4><code>llm-gpt-oss</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 651</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -981,8 +1297,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 655</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -997,12 +1313,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>nuner-zero</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 671</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -1017,8 +1333,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 685</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -1033,12 +1349,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>bert-conll</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 565</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -1053,8 +1369,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 593</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -1069,12 +1385,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>gliner-medium</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 788</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -1089,8 +1405,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 804</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -1105,12 +1421,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>gliner-bi-large</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 527</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -1125,8 +1441,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 527</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -1141,12 +1457,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>llm-mock</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 636</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -1161,8 +1477,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 670</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -1177,12 +1493,12 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     <div class="confusion-run">
       <h4><code>pattern</code></h4>
-      
+
     <div class="confusion-wrap">
       <p class="confusion-note">Relaxed span pairing (IoU ≥ 0.5); labels may differ · total paired counts: 900</p>
       <table class="confusion-matrix" aria-label="Relaxed span pairing (IoU ≥ 0.5); labels may differ">
@@ -1197,8 +1513,8 @@
         </tbody>
       </table>
     </div>
-    
-      
+
+
     <div class="confusion-wrap">
       <p class="confusion-note">Strict span pairing (exact start/end); labels may differ · total paired counts: 942</p>
       <table class="confusion-matrix" aria-label="Strict span pairing (exact start/end); labels may differ">
@@ -1213,23 +1529,23 @@
         </tbody>
       </table>
     </div>
-    
+
     </div>
-    
+
     </section>
-    
+
     </section>
-    
-    
+
+
     </div>
-      
+
       <div class="tab-panel tab-panel-methodology">
         <div class="method-body">
           <p class="method-lead">Each gold example is loaded from JSONL, passed through a NER backend
           (<code>detect_entities</code>), and scored against annotated spans after label normalization.
           This report compares <strong>backend implementations</strong> on fixed gold data — not end-to-end
           application quality or downstream retrieval.</p>
-          
+
 
           <h3>This run</h3>
           <dl>
@@ -1247,7 +1563,7 @@
             <dd><code>arxiv_gold</code>, <code>synthetic_news_100</code></dd>
           </dl>
 
-          
+
           <h3>Benchmark process</h3>
           <ol>
             <li>Read <code>benchmark/config/compare_backends.yaml</code> for run definitions and dataset names.</li>
@@ -1374,9 +1690,12 @@
         </div>
         </div>
     </div>
-    
-
-    <footer>ner-detector · benchmark/run_benchmark.py</footer>
+  </main>
+  <footer class="site-footer">
+  <div class="wrap">
+    <p class="muted">ner-detector · benchmark/run_benchmark.py</p>
+    <p class="muted small">The code is evidence. This site is the argument.</p>
   </div>
+</footer>
 </body>
 </html>

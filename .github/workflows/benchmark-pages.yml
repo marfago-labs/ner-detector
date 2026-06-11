@@ -48,6 +48,12 @@ jobs:
       - name: Install dependencies (ML + LLM backends)
         run: uv sync --extra dev --extra ml --extra gliner --extra llm
 
+      - name: Lint and typecheck
+        run: |
+          uv run ruff check ner_detector tests
+          uv run ruff format --check ner_detector tests
+          uv run mypy ner_detector
+
       - id: paths
         shell: bash
         run: |

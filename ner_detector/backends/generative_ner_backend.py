@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Any
 
 from ner_detector.backends.chunking import (
     _DEFAULT_CHUNK_OVERLAP,
@@ -64,7 +65,7 @@ def parse_uniner_response(raw: str, *, source_text: str, entity_type: str) -> li
     for item in payload:
         surface: str | None = None
         item_label = label
-        if isinstance(item, (list, tuple)) and item:
+        if isinstance(item, list | tuple) and item:
             surface = str(item[0]).strip()
             if len(item) > 1:
                 item_label = str(item[1]).strip().lower()
@@ -104,7 +105,7 @@ class GenerativeNerBackend:
     ) -> None:
         self.model_id = model_id
         self.max_chunk_chars = max_chunk_chars
-        self._pipeline = None
+        self._pipeline: Any = None
 
     def _ensure_loaded(self) -> None:
         if self._pipeline is not None:
@@ -113,7 +114,7 @@ class GenerativeNerBackend:
         from transformers import pipeline
 
         device = 0 if torch.cuda.is_available() else -1
-        self._pipeline = pipeline(
+        self._pipeline = pipeline(  # type: ignore[call-overload]
             "text-generation",
             model=self.model_id,
             tokenizer=self.model_id,
