@@ -14,6 +14,7 @@ from ner_detector.config import resolve_label_definitions
 from ner_detector.detect import detect_entities
 from ner_detector.eval.loaders import load_dataset, resolve_benchmark_root
 from ner_detector.eval.metrics import ScoreSummary, score_example
+from ner_detector.eval.paths import display_repo_path
 from ner_detector.eval.repeat_stats import LatencyStats, compute_latency_stats
 from ner_detector.eval.types import BackendRunSpec, BenchmarkConfig, GoldExample
 from ner_detector.registry import clear_backend_cache
@@ -81,8 +82,8 @@ class BenchmarkResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "config_path": str(self.config_path),
-            "output_dir": str(self.output_dir),
+            "config_path": display_repo_path(self.config_path),
+            "output_dir": display_repo_path(self.output_dir),
             "repeats": self.repeats,
             "runs": [r.to_dict() for r in self.results],
         }

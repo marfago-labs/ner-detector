@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from ner_detector.eval.paths import display_repo_path
 from ner_detector.eval.repeat_stats import format_latency_mean_std
 from ner_detector.eval.runner import BenchmarkResult, RunResult
 
@@ -41,8 +42,8 @@ def render_markdown_report(benchmark: BenchmarkResult) -> str:
     lines = [
         "# NER backend benchmark report",
         "",
-        f"Config: `{benchmark.config_path}`",
-        f"Output: `{benchmark.output_dir}`",
+        f"Config: `{display_repo_path(benchmark.config_path)}`",
+        f"Output: `{display_repo_path(benchmark.output_dir)}`",
         repeats_note,
         "## Summary (document-level string overlap F1)",
         "",

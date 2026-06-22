@@ -105,6 +105,15 @@ jobs:
           test -f "$out/report.html"
           cp "$out/report.html" "$out/index.html"
 
+      - name: Reject Windows absolute paths in report
+        shell: bash
+        run: |
+          out="${{ steps.paths.outputs.output_dir }}"
+          if grep -E '[A-Za-z]:\\' "$out/report.md" "$out/report.html" 2>/dev/null; then
+            echo "report contains drive-letter paths (machine-local leak)" >&2
+            exit 1
+          fi
+
       - name: Upload report (workflow artifact)
         uses: actions/upload-artifact@v6
         with:

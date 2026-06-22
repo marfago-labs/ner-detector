@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 
+from ner_detector.eval.paths import display_repo_path
 from ner_detector.eval.runner import BenchmarkResult, load_benchmark_config
 
 REPORT_TAB_CSS = """
@@ -196,8 +197,8 @@ def _format_run_spec(
 
 def render_ner_methodology_content(benchmark: BenchmarkResult) -> str:
     """Inner HTML for the metrics & methodology tab."""
-    config_path = html.escape(str(benchmark.config_path))
-    output_dir = html.escape(str(benchmark.output_dir))
+    config_path = html.escape(display_repo_path(benchmark.config_path))
+    output_dir = html.escape(display_repo_path(benchmark.output_dir))
 
     try:
         cfg = load_benchmark_config(benchmark.config_path)

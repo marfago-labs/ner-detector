@@ -10,6 +10,7 @@ from ner_detector.eval.curve_runner import ThresholdCurvesResult
 from ner_detector.eval.curve_svg import curve_chart_css, render_curves_section_html
 from ner_detector.eval.lab_chrome import load_lab_theme_css, site_footer, site_header
 from ner_detector.eval.metrics import ScoreSummary
+from ner_detector.eval.paths import display_repo_path
 from ner_detector.eval.radar_svg import (
     RADAR_CHART_CSS,
     build_run_color_map,
@@ -504,8 +505,8 @@ def render_html_report(
     benchmark: BenchmarkResult,
     curves: ThresholdCurvesResult | None = None,
 ) -> str:
-    config_path = html.escape(str(benchmark.config_path))
-    output_dir = html.escape(str(benchmark.output_dir))
+    config_path = html.escape(display_repo_path(benchmark.config_path))
+    output_dir = html.escape(display_repo_path(benchmark.output_dir))
 
     run_color_map = build_run_color_map(_run_names_for_color_map(benchmark))
     by_dataset = _group_by_dataset(benchmark.results)
